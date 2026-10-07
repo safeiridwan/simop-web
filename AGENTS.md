@@ -59,6 +59,9 @@ src/
 - `organization` (Phase 4): unit tree at `/organization`, unit detail at
   `/organization/units/:id` with children, positions, periods and officers.
   `TreeNode.vue` is recursive; `UnitForm.vue` is shared by create and edit.
+- `cadre` (Phase 5): cadres list/detail with promotion and history, plus
+  `/cadre-training` and `/cadre-training/:id` (batches, participants, sessions,
+  attendance, assessments, certificates) via `BatchPanel.vue`.
 
 ## Responsive UI
 

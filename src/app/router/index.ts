@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import { useAuthStore } from '@/app/stores/auth'
 import { authRoutes } from '@/modules/auth/routes'
+import { cadreRoutes } from '@/modules/cadre/routes'
 import { dashboardRoutes } from '@/modules/dashboard/routes'
 import { healthRoutes } from '@/modules/health/routes'
 import { memberRoutes } from '@/modules/members/routes'
@@ -27,6 +28,7 @@ export const router = createRouter({
         ...memberRoutes,
         ...nonPartyRoutes,
         ...organizationRoutes,
+        ...cadreRoutes,
         ...userRoutes,
         ...roleRoutes,
         ...permissionRoutes,

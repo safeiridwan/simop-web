@@ -20,6 +20,8 @@ const nav: NavItem[] = [
   { label: 'Anggota', to: '/members', permission: 'members:read' },
   { label: 'Non-Anggota', to: '/non-party', permission: 'members:read' },
   { label: 'Organisasi', to: '/organization', permission: 'organization:read' },
+  { label: 'Kader', to: '/cadres', permission: 'cadre:read' },
+  { label: 'Pelatihan', to: '/cadre-training', permission: 'cadre:read' },
   { label: 'Pengguna', to: '/settings/users', permission: 'users:read' },
   { label: 'Peran', to: '/settings/roles', permission: 'roles:read' },
   { label: 'Izin', to: '/settings/permissions', permission: 'permissions:read' },
