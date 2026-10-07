@@ -42,6 +42,16 @@ src/
 - Mask sensitive data (e.g. NIK) by default (plan §24, §51).
 - Do not add a UI library without an ADR.
 
+## Auth (Phase 1)
+
+- Access token lives in memory (`services/http`); the refresh token is an
+  httpOnly cookie handled by the browser.
+- `services/http` attaches the bearer token, retries once after a 401 by calling
+  `/api/v1/auth/refresh`, and throws `HttpError` on failure.
+- `stores/auth` (Pinia) holds the user, `can(code)` permission checks, and
+  `bootstrap()` which resolves the session from the refresh cookie on load.
+- Route guards use `meta.requiresAuth` and `meta.permission`.
+
 ## Commands
 
 ```bash
