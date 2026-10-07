@@ -102,6 +102,24 @@ export async function apiDelete<T>(path: string): Promise<T> {
   return (await request<T>('DELETE', path)).data
 }
 
+/** Download a file from an authenticated endpoint and save it. */
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  let res = await send('GET', path)
+  if (res.status === 401 && (await refreshAccessToken())) {
+    res = await send('GET', path)
+  }
+  if (!res.ok) {
+    throw new HttpError(res.status, 'DOWNLOAD_FAILED', 'Download failed')
+  }
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 /** Internal: used by tests to reset module state. */
 export function __resetHttpState(): void {
   accessToken = null

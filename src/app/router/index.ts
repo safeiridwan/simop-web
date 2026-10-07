@@ -4,6 +4,8 @@ import { useAuthStore } from '@/app/stores/auth'
 import { authRoutes } from '@/modules/auth/routes'
 import { dashboardRoutes } from '@/modules/dashboard/routes'
 import { healthRoutes } from '@/modules/health/routes'
+import { memberRoutes } from '@/modules/members/routes'
+import { nonPartyRoutes } from '@/modules/non-party/routes'
 import { peopleRoutes } from '@/modules/people/routes'
 import { permissionRoutes } from '@/modules/permissions/routes'
 import { roleRoutes } from '@/modules/roles/routes'
@@ -18,7 +20,15 @@ export const router = createRouter({
     {
       path: '/',
       component: () => import('@/app/layouts/DashboardLayout.vue'),
-      children: [...dashboardRoutes, ...peopleRoutes, ...userRoutes, ...roleRoutes, ...permissionRoutes],
+      children: [
+        ...dashboardRoutes,
+        ...peopleRoutes,
+        ...memberRoutes,
+        ...nonPartyRoutes,
+        ...userRoutes,
+        ...roleRoutes,
+        ...permissionRoutes,
+      ],
     },
     { path: '/:pathMatch(.*)*', redirect: '/dashboard' },
   ],

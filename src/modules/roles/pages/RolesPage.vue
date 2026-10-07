@@ -16,21 +16,23 @@ onMounted(() => void load())
     <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
     <p v-else-if="roles.length === 0" class="text-sm text-slate-500">Belum ada peran.</p>
 
-    <table v-else class="w-full border-collapse text-sm">
-      <thead>
-        <tr class="border-b border-slate-200 text-left text-slate-500">
-          <th class="py-2">Kode</th>
-          <th class="py-2">Nama</th>
-          <th class="py-2">Deskripsi</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="role in roles" :key="role.id" class="border-b border-slate-100">
-          <td class="py-2 font-mono text-xs text-slate-900">{{ role.code }}</td>
-          <td class="py-2 text-slate-600">{{ role.name }}</td>
-          <td class="py-2 text-slate-600">{{ role.description ?? '—' }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div v-else class="overflow-x-auto">
+      <table class="w-full min-w-[36rem] border-collapse text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 text-left text-slate-500">
+            <th class="py-2 pr-4">Kode</th>
+            <th class="py-2 pr-4">Nama</th>
+            <th class="py-2">Deskripsi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="role in roles" :key="role.id" class="border-b border-slate-100">
+            <td class="py-2 pr-4 font-mono text-xs text-slate-900">{{ role.code }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ role.name }}</td>
+            <td class="py-2 text-slate-600">{{ role.description ?? '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </section>
 </template>

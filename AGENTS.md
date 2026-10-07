@@ -53,6 +53,18 @@ src/
 - `auth`, `dashboard`, `health`, `users`, `roles`, `permissions` (Phase 1).
 - `people` (Phase 2): list/create/detail/edit, addresses with region cascade,
   documents. `PersonForm.vue` is shared by create and edit.
+- `members` (Phase 3): list/create/detail, status change, history, CSV export.
+- `non-party` (Phase 3): affiliations by type (sympathizers, volunteers,
+  beneficiaries, ...) under `/non-party/:type`.
+
+## Responsive UI
+
+- Mobile-first. The dashboard shell uses a drawer sidebar (`lg:` breakpoint);
+  content is offset with `lg:pl-64`.
+- Tables are wrapped in `overflow-x-auto` with a `min-w-[...]` table so they
+  scroll on small screens. Prefer stacking toolbars/headers with
+  `flex-col sm:flex-row`.
+- Forms use `grid gap-3 sm:grid-cols-2`. Never fixed-width inputs on mobile.
 
 ## Auth (Phase 1)
 

@@ -17,8 +17,8 @@ onMounted(() => void load())
     <p v-else-if="permissions.length === 0" class="text-sm text-slate-500">Belum ada izin.</p>
 
     <ul v-else class="divide-y divide-slate-100 text-sm">
-      <li v-for="permission in permissions" :key="permission.id" class="flex py-2">
-        <span class="w-56 font-mono text-xs text-slate-900">{{ permission.code }}</span>
+      <li v-for="permission in permissions" :key="permission.id" class="flex flex-col py-2 sm:flex-row">
+        <span class="font-mono text-xs text-slate-900 sm:w-56">{{ permission.code }}</span>
         <span class="text-slate-600">{{ permission.description ?? '—' }}</span>
       </li>
     </ul>

@@ -80,12 +80,12 @@ async function addDocument() {
     <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
 
     <template v-else-if="person">
-      <header class="mb-6 flex items-center justify-between">
+      <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 class="text-xl font-semibold text-slate-900">{{ person.full_name }}</h1>
           <p class="font-mono text-xs text-slate-500">{{ person.person_code }}</p>
         </div>
-        <router-link :to="`/people/${person.id}/edit`" class="rounded border border-slate-300 px-3 py-2 text-sm">
+        <router-link :to="`/people/${person.id}/edit`" class="rounded border border-slate-300 px-3 py-2 text-center text-sm sm:w-fit">
           Ubah
         </router-link>
       </header>

@@ -17,14 +17,14 @@ function onFilter() {
 
 <template>
   <section>
-    <header class="mb-6 flex items-center justify-between">
+    <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 class="text-xl font-semibold text-slate-900">Orang</h1>
         <p v-if="meta" class="text-sm text-slate-500">{{ meta.total }} data</p>
       </div>
       <router-link
         to="/people/new"
-        class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
+        class="rounded bg-brand-500 px-3 py-2 text-center text-sm font-medium text-white hover:bg-brand-600 sm:w-fit"
       >
         Tambah Orang
       </router-link>
@@ -34,7 +34,7 @@ function onFilter() {
       <input
         v-model="search"
         placeholder="Cari nama atau kode"
-        class="w-64 rounded border border-slate-300 px-3 py-2 text-sm"
+        class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64"
         @keyup.enter="onFilter"
       />
       <select v-model="status" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="onFilter">
@@ -50,29 +50,31 @@ function onFilter() {
     <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
     <p v-else-if="people.length === 0" class="text-sm text-slate-500">Belum ada data orang.</p>
 
-    <table v-else class="w-full border-collapse text-sm">
-      <thead>
-        <tr class="border-b border-slate-200 text-left text-slate-500">
-          <th class="py-2">Kode</th>
-          <th class="py-2">Nama</th>
-          <th class="py-2">NIK</th>
-          <th class="py-2">Telepon</th>
-          <th class="py-2">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="person in people" :key="person.id" class="border-b border-slate-100 hover:bg-slate-50">
-          <td class="py-2 font-mono text-xs text-slate-500">{{ person.person_code }}</td>
-          <td class="py-2">
-            <router-link :to="`/people/${person.id}`" class="text-brand-600 hover:underline">
-              {{ person.full_name }}
-            </router-link>
-          </td>
-          <td class="py-2 text-slate-600">{{ person.nik_masked || '—' }}</td>
-          <td class="py-2 text-slate-600">{{ person.phone_masked || '—' }}</td>
-          <td class="py-2 text-slate-600">{{ person.status }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div v-else class="overflow-x-auto">
+      <table class="w-full min-w-[42rem] border-collapse text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 text-left text-slate-500">
+            <th class="py-2 pr-4">Kode</th>
+            <th class="py-2 pr-4">Nama</th>
+            <th class="py-2 pr-4">NIK</th>
+            <th class="py-2 pr-4">Telepon</th>
+            <th class="py-2">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="person in people" :key="person.id" class="border-b border-slate-100 hover:bg-slate-50">
+            <td class="py-2 pr-4 font-mono text-xs text-slate-500">{{ person.person_code }}</td>
+            <td class="py-2 pr-4">
+              <router-link :to="`/people/${person.id}`" class="text-brand-600 hover:underline">
+                {{ person.full_name }}
+              </router-link>
+            </td>
+            <td class="py-2 pr-4 text-slate-600">{{ person.nik_masked || '—' }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ person.phone_masked || '—' }}</td>
+            <td class="py-2 text-slate-600">{{ person.status }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </section>
 </template>
