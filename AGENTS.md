@@ -56,6 +56,9 @@ src/
 - `members` (Phase 3): list/create/detail, status change, history, CSV export.
 - `non-party` (Phase 3): affiliations by type (sympathizers, volunteers,
   beneficiaries, ...) under `/non-party/:type`.
+- `organization` (Phase 4): unit tree at `/organization`, unit detail at
+  `/organization/units/:id` with children, positions, periods and officers.
+  `TreeNode.vue` is recursive; `UnitForm.vue` is shared by create and edit.
 
 ## Responsive UI
 

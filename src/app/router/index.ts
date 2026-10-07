@@ -6,6 +6,7 @@ import { dashboardRoutes } from '@/modules/dashboard/routes'
 import { healthRoutes } from '@/modules/health/routes'
 import { memberRoutes } from '@/modules/members/routes'
 import { nonPartyRoutes } from '@/modules/non-party/routes'
+import { organizationRoutes } from '@/modules/organization/routes'
 import { peopleRoutes } from '@/modules/people/routes'
 import { permissionRoutes } from '@/modules/permissions/routes'
 import { roleRoutes } from '@/modules/roles/routes'
@@ -25,6 +26,7 @@ export const router = createRouter({
         ...peopleRoutes,
         ...memberRoutes,
         ...nonPartyRoutes,
+        ...organizationRoutes,
         ...userRoutes,
         ...roleRoutes,
         ...permissionRoutes,

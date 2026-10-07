@@ -19,6 +19,7 @@ const nav: NavItem[] = [
   { label: 'Orang', to: '/people', permission: 'persons:read' },
   { label: 'Anggota', to: '/members', permission: 'members:read' },
   { label: 'Non-Anggota', to: '/non-party', permission: 'members:read' },
+  { label: 'Organisasi', to: '/organization', permission: 'organization:read' },
   { label: 'Pengguna', to: '/settings/users', permission: 'users:read' },
   { label: 'Peran', to: '/settings/roles', permission: 'roles:read' },
   { label: 'Izin', to: '/settings/permissions', permission: 'permissions:read' },
