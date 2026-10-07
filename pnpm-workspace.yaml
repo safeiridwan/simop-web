@@ -1,0 +1,11 @@
+# Single-package settings only (simop-web is its own pnpm project, not part of
+# the parent repo's root workspace).
+packages:
+  - '.'
+
+allowBuilds:
+  '@tailwindcss/oxide': true
+  esbuild: true
+  vue-demi: true
+
+strictDepBuilds: false
