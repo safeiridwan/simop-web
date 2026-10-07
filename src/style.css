@@ -1,1 +1,25 @@
 @import 'tailwindcss';
+
+/*
+ * SIMOP brand palette. Primary is orange #FF5001 (see docs/design-guide.md).
+ * The 500 shade is the brand hue; 600/700 are darker hovers, 50-200 are tints.
+ */
+@theme {
+  --color-brand-50: #fff3ed;
+  --color-brand-100: #ffe3d4;
+  --color-brand-200: #ffc3a8;
+  --color-brand-300: #ff9b70;
+  --color-brand-400: #ff7438;
+  --color-brand-500: #ff5001;
+  --color-brand-600: #e03d00;
+  --color-brand-700: #b82f00;
+  --color-brand-800: #922800;
+  --color-brand-900: #762300;
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+  }
+}

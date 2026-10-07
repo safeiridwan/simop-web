@@ -51,7 +51,7 @@ function roleLabel(user: User): string {
       <h1 class="text-xl font-semibold text-slate-900">Pengguna</h1>
       <button
         type="button"
-        class="rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
         @click="showForm = !showForm"
       >
         {{ showForm ? 'Batal' : 'Tambah Pengguna' }}
@@ -79,7 +79,7 @@ function roleLabel(user: User): string {
       <button
         type="submit"
         :disabled="submitting"
-        class="rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
       >
         {{ submitting ? 'Menyimpan...' : 'Simpan' }}
       </button>

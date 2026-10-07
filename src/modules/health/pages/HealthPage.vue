@@ -22,7 +22,7 @@ onMounted(() => {
       </p>
       <button
         type="button"
-        class="mt-6 rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        class="mt-6 rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
         @click="store.check()"
       >
         Periksa ulang

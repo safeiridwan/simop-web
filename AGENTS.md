@@ -42,6 +42,18 @@ src/
 - Mask sensitive data (e.g. NIK) by default (plan §24, §51).
 - Do not add a UI library without an ADR.
 
+## Theme
+
+- Primary brand color is orange `#FF5001`, exposed as Tailwind `brand-*` tokens
+  in `src/style.css`. Use `brand-500`/`brand-600` for primary actions and links.
+  See `docs/design-guide.md`.
+
+## Modules
+
+- `auth`, `dashboard`, `health`, `users`, `roles`, `permissions` (Phase 1).
+- `people` (Phase 2): list/create/detail/edit, addresses with region cascade,
+  documents. `PersonForm.vue` is shared by create and edit.
+
 ## Auth (Phase 1)
 
 - Access token lives in memory (`services/http`); the refresh token is an

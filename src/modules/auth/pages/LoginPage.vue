@@ -64,7 +64,7 @@ async function submit() {
       <button
         type="submit"
         :disabled="loading"
-        class="mt-6 w-full rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        class="mt-6 w-full rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
       >
         {{ loading ? 'Memproses...' : 'Masuk' }}
       </button>
