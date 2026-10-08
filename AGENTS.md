@@ -73,6 +73,10 @@ src/
 - `governance` (Phase 9): `/meetings` list/create, `/meetings/:id` detail with
   participants/attendance, agenda, minutes, decisions and action items, plus
   `/tasks` list/create with completion.
+- `ethics` (Phase 10): `/ethics/cases` list/create and `/ethics/cases/:id`
+  detail with reports, investigations, evidence, hearings, decisions and
+  sanctions. Restricted — only rendered for users with `ethics:read`; never on
+  the dashboard.
 
 ## Responsive UI
 

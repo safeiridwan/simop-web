@@ -32,6 +32,7 @@ const nav: NavItem[] = [
   { label: 'Dokumen', to: '/documents', permission: 'documents:read' },
   { label: 'Rapat', to: '/meetings', permission: 'governance:read' },
   { label: 'Tugas', to: '/tasks', permission: 'governance:read' },
+  { label: 'Etik', to: '/ethics/cases', permission: 'ethics:read' },
   { label: 'Pengguna', to: '/settings/users', permission: 'users:read' },
   { label: 'Peran', to: '/settings/roles', permission: 'roles:read' },
   { label: 'Izin', to: '/settings/permissions', permission: 'permissions:read' },
