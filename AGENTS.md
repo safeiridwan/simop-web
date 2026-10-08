@@ -80,6 +80,9 @@ src/
 - `assets` (Phase 11): `/assets` list/create, `/assets/:id` detail with
   assignment, maintenance and disposal actions, and `/assets/categories` for
   categories/locations.
+- `dashboard` (Phase 12): `/dashboard` renders permission-filtered summary
+  cards and grouped breakdowns.
+- `reports` (Phase 12): `/reports` tabbed report viewer with CSV export.
 
 ## Responsive UI
 
