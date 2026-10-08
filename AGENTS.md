@@ -70,6 +70,9 @@ src/
   The journal form computes live debit/credit totals and flags imbalance.
 - `documents` (Phase 8): `/documents` list/create with file upload,
   `/documents/:id` detail with versions, downloads, and access grants.
+- `governance` (Phase 9): `/meetings` list/create, `/meetings/:id` detail with
+  participants/attendance, agenda, minutes, decisions and action items, plus
+  `/tasks` list/create with completion.
 
 ## Responsive UI
 

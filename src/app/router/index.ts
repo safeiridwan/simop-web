@@ -6,6 +6,7 @@ import { cadreRoutes } from '@/modules/cadre/routes'
 import { dashboardRoutes } from '@/modules/dashboard/routes'
 import { documentRoutes } from '@/modules/documents/routes'
 import { financeRoutes } from '@/modules/finance/routes'
+import { governanceRoutes } from '@/modules/governance/routes'
 import { healthRoutes } from '@/modules/health/routes'
 import { memberRoutes } from '@/modules/members/routes'
 import { nonPartyRoutes } from '@/modules/non-party/routes'
@@ -35,6 +36,7 @@ export const router = createRouter({
         ...programRoutes,
         ...financeRoutes,
         ...documentRoutes,
+        ...governanceRoutes,
         ...userRoutes,
         ...roleRoutes,
         ...permissionRoutes,
