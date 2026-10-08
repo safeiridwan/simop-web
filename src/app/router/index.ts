@@ -4,6 +4,7 @@ import { useAuthStore } from '@/app/stores/auth'
 import { authRoutes } from '@/modules/auth/routes'
 import { cadreRoutes } from '@/modules/cadre/routes'
 import { dashboardRoutes } from '@/modules/dashboard/routes'
+import { financeRoutes } from '@/modules/finance/routes'
 import { healthRoutes } from '@/modules/health/routes'
 import { memberRoutes } from '@/modules/members/routes'
 import { nonPartyRoutes } from '@/modules/non-party/routes'
@@ -31,6 +32,7 @@ export const router = createRouter({
         ...organizationRoutes,
         ...cadreRoutes,
         ...programRoutes,
+        ...financeRoutes,
         ...userRoutes,
         ...roleRoutes,
         ...permissionRoutes,

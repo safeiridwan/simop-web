@@ -65,6 +65,9 @@ src/
 - `programs` (Phase 6): `/programs` list/create, `/programs/:id` detail with
   workflow actions, targets, indicators, reports and activities (via
   `ActivityPanel.vue`), plus `/activities` list.
+- `finance` (Phase 7): `/finance/accounts`, `/finance/funds`,
+  `/finance/budgets`, `/finance/journals` (+ detail), `/finance/reimbursements`.
+  The journal form computes live debit/credit totals and flags imbalance.
 
 ## Responsive UI
 
