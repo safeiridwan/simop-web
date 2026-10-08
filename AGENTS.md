@@ -85,6 +85,8 @@ src/
 - `reports` (Phase 12): `/reports` tabbed report viewer with CSV export.
 - `data-quality` (Phase 13): `/data-quality` shows the issue ledger, a
   per-rule summary, a scan action and resolve/ignore actions.
+- `election-readiness` (Phase 14): `/election-readiness` shows the readiness
+  overview, per-check breakdown, scan, resolve/ignore and CSV export.
 
 ## Responsive UI
 

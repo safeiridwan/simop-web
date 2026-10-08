@@ -7,6 +7,7 @@ import { cadreRoutes } from '@/modules/cadre/routes'
 import { dashboardRoutes } from '@/modules/dashboard/routes'
 import { dataQualityRoutes } from '@/modules/data-quality/routes'
 import { documentRoutes } from '@/modules/documents/routes'
+import { electionReadinessRoutes } from '@/modules/election-readiness/routes'
 import { ethicsRoutes } from '@/modules/ethics/routes'
 import { financeRoutes } from '@/modules/finance/routes'
 import { governanceRoutes } from '@/modules/governance/routes'
@@ -45,6 +46,7 @@ export const router = createRouter({
         ...assetRoutes,
         ...reportRoutes,
         ...dataQualityRoutes,
+        ...electionReadinessRoutes,
         ...userRoutes,
         ...roleRoutes,
         ...permissionRoutes,
