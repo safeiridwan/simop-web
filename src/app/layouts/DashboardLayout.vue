@@ -29,6 +29,7 @@ const nav: NavItem[] = [
   { label: 'Dana', to: '/finance/funds', permission: 'finance:read' },
   { label: 'Anggaran', to: '/finance/budgets', permission: 'finance:read' },
   { label: 'SPJ', to: '/finance/reimbursements', permission: 'finance:read' },
+  { label: 'Dokumen', to: '/documents', permission: 'documents:read' },
   { label: 'Pengguna', to: '/settings/users', permission: 'users:read' },
   { label: 'Peran', to: '/settings/roles', permission: 'roles:read' },
   { label: 'Izin', to: '/settings/permissions', permission: 'permissions:read' },

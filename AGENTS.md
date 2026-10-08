@@ -68,6 +68,8 @@ src/
 - `finance` (Phase 7): `/finance/accounts`, `/finance/funds`,
   `/finance/budgets`, `/finance/journals` (+ detail), `/finance/reimbursements`.
   The journal form computes live debit/credit totals and flags imbalance.
+- `documents` (Phase 8): `/documents` list/create with file upload,
+  `/documents/:id` detail with versions, downloads, and access grants.
 
 ## Responsive UI
 
