@@ -62,6 +62,9 @@ src/
 - `cadre` (Phase 5): cadres list/detail with promotion and history, plus
   `/cadre-training` and `/cadre-training/:id` (batches, participants, sessions,
   attendance, assessments, certificates) via `BatchPanel.vue`.
+- `programs` (Phase 6): `/programs` list/create, `/programs/:id` detail with
+  workflow actions, targets, indicators, reports and activities (via
+  `ActivityPanel.vue`), plus `/activities` list.
 
 ## Responsive UI
 

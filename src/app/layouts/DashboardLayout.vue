@@ -22,6 +22,8 @@ const nav: NavItem[] = [
   { label: 'Organisasi', to: '/organization', permission: 'organization:read' },
   { label: 'Kader', to: '/cadres', permission: 'cadre:read' },
   { label: 'Pelatihan', to: '/cadre-training', permission: 'cadre:read' },
+  { label: 'Program', to: '/programs', permission: 'programs:read' },
+  { label: 'Kegiatan', to: '/activities', permission: 'programs:read' },
   { label: 'Pengguna', to: '/settings/users', permission: 'users:read' },
   { label: 'Peran', to: '/settings/roles', permission: 'roles:read' },
   { label: 'Izin', to: '/settings/permissions', permission: 'permissions:read' },
