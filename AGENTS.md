@@ -77,6 +77,9 @@ src/
   detail with reports, investigations, evidence, hearings, decisions and
   sanctions. Restricted — only rendered for users with `ethics:read`; never on
   the dashboard.
+- `assets` (Phase 11): `/assets` list/create, `/assets/:id` detail with
+  assignment, maintenance and disposal actions, and `/assets/categories` for
+  categories/locations.
 
 ## Responsive UI
 
