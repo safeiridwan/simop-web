@@ -83,6 +83,8 @@ src/
 - `dashboard` (Phase 12): `/dashboard` renders permission-filtered summary
   cards and grouped breakdowns.
 - `reports` (Phase 12): `/reports` tabbed report viewer with CSV export.
+- `data-quality` (Phase 13): `/data-quality` shows the issue ledger, a
+  per-rule summary, a scan action and resolve/ignore actions.
 
 ## Responsive UI
 
