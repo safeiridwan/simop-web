@@ -4,7 +4,7 @@ import type { Affiliation, AffiliationInput, PageMeta } from './types'
 export interface ListAffiliationsQuery {
   page?: number
   pageSize?: number
-  type?: string
+  types?: string[]
   status?: string
   search?: string
 }
@@ -14,7 +14,7 @@ export const affiliationsApi = {
     const params = new URLSearchParams()
     params.set('page', String(query.page ?? 1))
     params.set('page_size', String(query.pageSize ?? 20))
-    if (query.type) params.set('affiliation_type', query.type)
+    for (const type of query.types ?? []) params.append('affiliation_type', type)
     if (query.status) params.set('status', query.status)
     if (query.search) params.set('search', query.search)
     return apiGetPage<Affiliation[], PageMeta>(`/api/v1/affiliations?${params.toString()}`)

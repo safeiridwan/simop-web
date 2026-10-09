@@ -63,7 +63,7 @@ async function submit() {
   <section>
     <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="text-xl font-semibold text-slate-900">Anggota</h1>
+        <h1 class="text-xl font-semibold text-slate-900">Anggota Partai</h1>
         <p v-if="meta" class="text-sm text-slate-500">{{ meta.total }} anggota</p>
       </div>
       <div class="flex flex-wrap gap-2">

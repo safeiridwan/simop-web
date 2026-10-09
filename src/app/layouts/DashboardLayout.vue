@@ -22,19 +22,12 @@ interface NavGroup {
 // Grouped navigation (plan §43). Groups with no visible item are hidden.
 const navGroups: NavGroup[] = [
   {
-    label: 'Orang',
+    label: 'Keanggotaan',
     items: [
       { label: 'Semua Orang', to: '/people', permission: 'persons:read' },
-      { label: 'Anggota', to: '/members', permission: 'members:read' },
-      { label: 'Simpatisan', to: '/non-party/sympathizers', permission: 'members:read' },
-      { label: 'Relawan', to: '/non-party/volunteers', permission: 'members:read' },
-      { label: 'Penerima Manfaat', to: '/non-party/beneficiaries', permission: 'members:read' },
-    ],
-  },
-  {
-    label: 'Kader',
-    items: [
-      { label: 'Daftar Kader', to: '/cadres', permission: 'cadre:read' },
+      { label: 'Anggota Partai', to: '/members', permission: 'members:read' },
+      { label: 'Kader', to: '/cadres', permission: 'cadre:read' },
+      { label: 'Non-Kader', to: '/non-party', permission: 'members:read' },
       { label: 'Pelatihan', to: '/cadre-training', permission: 'cadre:read' },
     ],
   },

@@ -53,9 +53,12 @@ src/
 - `auth`, `dashboard`, `health`, `users`, `roles`, `permissions` (Phase 1).
 - `people` (Phase 2): list/create/detail/edit, addresses with region cascade,
   documents. `PersonForm.vue` is shared by create and edit.
+- Sidebar group "Keanggotaan" groups `people`, `members` (Anggota Partai),
+  `cadres` (Kader), `non-party` (Non-Kader) and `cadre-training` (Pelatihan).
 - `members` (Phase 3): list/create/detail, status change, history, CSV export.
-- `non-party` (Phase 3): affiliations by type (sympathizers, volunteers,
-  beneficiaries, ...) under `/non-party/:type`.
+- `non-party` (Phase 3): `/non-party` merged view of non-member affiliations
+  with a search box and per-type checkboxes (sympathizer, volunteer,
+  beneficiary, event/program participant, other).
 - `organization` (Phase 4): unit tree at `/organization`, unit detail at
   `/organization/units/:id` with children, positions, periods and officers.
   `TreeNode.vue` is recursive; `UnitForm.vue` is shared by create and edit.

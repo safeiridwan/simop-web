@@ -4,12 +4,11 @@ export const nonPartyRoutes: RouteRecordRaw[] = [
   {
     path: 'non-party',
     name: 'non-party',
-    redirect: '/non-party/sympathizers',
+    component: () => import('./pages/NonPartyPage.vue'),
+    meta: { requiresAuth: true, permission: 'members:read' },
   },
   {
     path: 'non-party/:type',
-    name: 'non-party-type',
-    component: () => import('./pages/NonPartyPage.vue'),
-    meta: { requiresAuth: true, permission: 'members:read' },
+    redirect: '/non-party',
   },
 ]

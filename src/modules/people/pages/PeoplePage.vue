@@ -1,17 +1,37 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
+import PersonForm from '../components/PersonForm.vue'
+import { peopleApi } from '../api'
+import type { PersonInput } from '../types'
 import { usePeople } from '../composables/usePeople'
 
 const { people, meta, loading, error, load } = usePeople()
 
 const search = ref('')
 const status = ref('')
+const showForm = ref(false)
+const submitting = ref(false)
+const formError = ref<string | null>(null)
 
 onMounted(() => void load())
 
 function onFilter() {
   void load(search.value, status.value)
+}
+
+async function onCreate(input: PersonInput) {
+  submitting.value = true
+  formError.value = null
+  try {
+    await peopleApi.create(input)
+    showForm.value = false
+    await load(search.value, status.value)
+  } catch (err) {
+    formError.value = err instanceof Error ? err.message : 'Gagal menyimpan'
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
@@ -19,16 +39,22 @@ function onFilter() {
   <section>
     <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="text-xl font-semibold text-slate-900">Orang</h1>
+        <h1 class="text-xl font-semibold text-slate-900">Semua Orang</h1>
         <p v-if="meta" class="text-sm text-slate-500">{{ meta.total }} data</p>
       </div>
-      <router-link
-        to="/people/new"
-        class="rounded bg-brand-500 px-3 py-2 text-center text-sm font-medium text-white hover:bg-brand-600 sm:w-fit"
+      <button
+        type="button"
+        class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:w-fit"
+        @click="showForm = !showForm"
       >
-        Tambah Orang
-      </router-link>
+        {{ showForm ? 'Batal' : 'Tambah Orang' }}
+      </button>
     </header>
+
+    <div v-if="showForm" class="mb-6 rounded-lg border border-slate-200 bg-white p-4">
+      <p v-if="formError" class="mb-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{{ formError }}</p>
+      <PersonForm :submitting="submitting" submit-label="Simpan" duplicate-check @submit="onCreate" />
+    </div>
 
     <div class="mb-4 flex flex-wrap gap-2">
       <input
