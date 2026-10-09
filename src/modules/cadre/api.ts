@@ -13,6 +13,8 @@ import type {
 } from './types'
 
 export interface ListCadresQuery {
+  page?: number
+  pageSize?: number
   search?: string
   levelId?: string
   status?: string
@@ -23,8 +25,8 @@ export const cadreApi = {
 
   list: (query: ListCadresQuery = {}) => {
     const params = new URLSearchParams()
-    params.set('page', '1')
-    params.set('page_size', '50')
+    params.set('page', String(query.page ?? 1))
+    params.set('page_size', String(query.pageSize ?? 50))
     if (query.search) params.set('search', query.search)
     if (query.levelId) params.set('level_id', query.levelId)
     if (query.status) params.set('status', query.status)

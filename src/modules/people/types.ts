@@ -69,3 +69,9 @@ export interface PersonDocument {
   file_id: string | null
   created_at: string
 }
+
+export interface DocumentInput {
+  document_type: string
+  document_number?: string | null
+  file_id?: string | null
+}

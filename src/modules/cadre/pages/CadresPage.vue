@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
 import PersonPicker from '@/components/PersonPicker.vue'
 import type { Person } from '@/modules/people/types'
 import { cadreApi } from '../api'
-import { CADRE_STATUSES, type CadreLevel, type CadreProfile } from '../types'
+import { CADRE_STATUSES, type CadreLevel, type CadreProfile, type PageMeta } from '../types'
 
 const cadres = ref<CadreProfile[]>([])
 const levels = ref<CadreLevel[]>([])
+const meta = ref<PageMeta | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 
@@ -18,16 +20,18 @@ const form = reactive({ level_id: '', started_at: '', notes: '' })
 
 const search = ref('')
 const statusFilter = ref('')
+const page = ref(1)
 
 async function load() {
   loading.value = true
   error.value = null
   try {
     const [list, levelList] = await Promise.all([
-      cadreApi.list({ search: search.value, status: statusFilter.value }),
+      cadreApi.list({ search: search.value, status: statusFilter.value, page: page.value }),
       cadreApi.levels(),
     ])
     cadres.value = list.data
+    meta.value = list.meta ?? null
     levels.value = levelList
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat data kader'
@@ -37,6 +41,16 @@ async function load() {
 }
 
 onMounted(load)
+
+function onFilter() {
+  page.value = 1
+  void load()
+}
+
+function onPageChange(target: number) {
+  page.value = target
+  void load()
+}
 
 async function submit() {
   if (!selectedPerson.value) {
@@ -71,7 +85,7 @@ async function submit() {
     <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 class="text-xl font-semibold text-slate-900">Kader</h1>
-        <p class="text-sm text-slate-500">{{ cadres.length }} kader</p>
+        <p class="text-sm text-slate-500">{{ meta?.total ?? cadres.length }} kader</p>
       </div>
       <button
         type="button"
@@ -106,12 +120,12 @@ async function submit() {
     </div>
 
     <div class="mb-4 flex flex-wrap gap-2">
-      <input v-model="search" placeholder="Cari nama atau kode" class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64" @keyup.enter="load" />
-      <select v-model="statusFilter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="load">
+      <input v-model="search" placeholder="Cari nama atau kode" class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64" @keyup.enter="onFilter" />
+      <select v-model="statusFilter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="onFilter">
         <option value="">Semua status</option>
         <option v-for="s in CADRE_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
       </select>
-      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="load">Cari</button>
+      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="onFilter">Cari</button>
     </div>
 
     <p v-if="loading" class="text-sm text-slate-500">Memuat...</p>
@@ -140,5 +154,7 @@ async function submit() {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>

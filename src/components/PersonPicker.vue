@@ -13,6 +13,12 @@ let timer: number | undefined
 
 watch(query, (q) => {
   window.clearTimeout(timer)
+  // Selecting sets query to the chosen name; don't re-run the search then.
+  if (model.value && q === model.value.full_name) {
+    results.value = []
+    open.value = false
+    return
+  }
   if (!q || q.trim().length < 2) {
     results.value = []
     open.value = false

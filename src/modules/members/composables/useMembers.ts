@@ -9,11 +9,11 @@ export function useMembers() {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  async function load(search = '', status = ''): Promise<void> {
+  async function load(search = '', status = '', page = 1): Promise<void> {
     loading.value = true
     error.value = null
     try {
-      const { data, meta: pageMeta } = await membersApi.list({ search, status })
+      const { data, meta: pageMeta } = await membersApi.list({ search, status, page })
       members.value = data
       meta.value = pageMeta ?? null
     } catch (err) {

@@ -2,6 +2,7 @@ import { apiDelete, apiGet, apiGetPage, apiPatch, apiPost } from '@/services/htt
 import type {
   Address,
   AddressInput,
+  DocumentInput,
   PageMeta,
   Person,
   PersonDocument,
@@ -36,11 +37,17 @@ export const peopleApi = {
   listAddresses: (id: string) => apiGet<Address[]>(`/api/v1/persons/${id}/addresses`),
   addAddress: (id: string, input: AddressInput) =>
     apiPost<Address>(`/api/v1/persons/${id}/addresses`, input),
+  updateAddress: (id: string, addressId: string, input: AddressInput) =>
+    apiPatch<Address>(`/api/v1/persons/${id}/addresses/${addressId}`, input),
   deleteAddress: (id: string, addressId: string) =>
     apiDelete<{ status: string }>(`/api/v1/persons/${id}/addresses/${addressId}`),
   listDocuments: (id: string) => apiGet<PersonDocument[]>(`/api/v1/persons/${id}/documents`),
-  addDocument: (id: string, input: { document_type: string; document_number?: string }) =>
+  addDocument: (id: string, input: DocumentInput) =>
     apiPost<PersonDocument>(`/api/v1/persons/${id}/documents`, input),
+  updateDocument: (id: string, documentId: string, input: DocumentInput) =>
+    apiPatch<PersonDocument>(`/api/v1/persons/${id}/documents/${documentId}`, input),
+  deleteDocument: (id: string, documentId: string) =>
+    apiDelete<{ status: string }>(`/api/v1/persons/${id}/documents/${documentId}`),
 }
 
 export const regionsApi = {

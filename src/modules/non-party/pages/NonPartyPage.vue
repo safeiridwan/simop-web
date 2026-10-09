@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
 import PersonPicker from '@/components/PersonPicker.vue'
 import type { Person } from '@/modules/people/types'
 import { affiliationsApi } from '../api'
@@ -14,6 +15,7 @@ const error = ref<string | null>(null)
 const search = ref('')
 const selectedTypes = ref<string[]>(AFFILIATION_TYPES.map((t) => t.value))
 const allSelected = computed(() => selectedTypes.value.length === AFFILIATION_TYPES.length)
+const page = ref(1)
 
 const showForm = ref(false)
 const submitting = ref(false)
@@ -27,6 +29,7 @@ async function load() {
     const { data, meta: pageMeta } = await affiliationsApi.list({
       search: search.value,
       types: selectedTypes.value,
+      page: page.value,
     })
     affiliations.value = data
     meta.value = pageMeta ?? null
@@ -39,6 +42,16 @@ async function load() {
 }
 
 onMounted(load)
+
+function onFilter() {
+  page.value = 1
+  void load()
+}
+
+function onPageChange(target: number) {
+  page.value = target
+  void load()
+}
 
 function toggleAll(event: Event) {
   selectedTypes.value = (event.target as HTMLInputElement).checked
@@ -134,9 +147,9 @@ async function submit() {
         v-model="search"
         placeholder="Cari nama atau kode"
         class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64"
-        @keyup.enter="load"
+        @keyup.enter="onFilter"
       />
-      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="load">Cari</button>
+      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="onFilter">Cari</button>
     </div>
 
     <div class="mb-4 flex flex-wrap items-center gap-4 rounded-lg border border-slate-200 bg-white p-3">
@@ -144,7 +157,7 @@ async function submit() {
         <input type="checkbox" :checked="allSelected" @change="toggleAll" /> Semua
       </label>
       <label v-for="t in AFFILIATION_TYPES" :key="t.value" class="flex items-center gap-2 text-sm text-slate-600">
-        <input v-model="selectedTypes" type="checkbox" :value="t.value" @change="load" /> {{ t.label }}
+        <input v-model="selectedTypes" type="checkbox" :value="t.value" @change="onFilter" /> {{ t.label }}
       </label>
     </div>
 
@@ -174,5 +187,7 @@ async function submit() {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>

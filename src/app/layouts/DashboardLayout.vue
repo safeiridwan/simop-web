@@ -28,7 +28,6 @@ const navGroups: NavGroup[] = [
       { label: 'Anggota Partai', to: '/members', permission: 'members:read' },
       { label: 'Kader', to: '/cadres', permission: 'cadre:read' },
       { label: 'Non-Kader', to: '/non-party', permission: 'members:read' },
-      { label: 'Pelatihan', to: '/cadre-training', permission: 'cadre:read' },
     ],
   },
   {

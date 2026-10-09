@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
 import PersonPicker from '@/components/PersonPicker.vue'
 import type { Person } from '@/modules/people/types'
 import { downloadFile } from '@/services/http'
@@ -12,6 +13,7 @@ const { members, meta, loading, error, load } = useMembers()
 
 const search = ref('')
 const status = ref('')
+const page = ref(1)
 const showForm = ref(false)
 const submitting = ref(false)
 const formError = ref<string | null>(null)
@@ -23,7 +25,13 @@ const source = ref('')
 onMounted(() => void load())
 
 function onFilter() {
-  void load(search.value, status.value)
+  page.value = 1
+  void load(search.value, status.value, page.value)
+}
+
+function onPageChange(target: number) {
+  page.value = target
+  void load(search.value, status.value, page.value)
 }
 
 async function onExport() {
@@ -50,7 +58,7 @@ async function submit() {
     selectedPerson.value = null
     joinDate.value = ''
     source.value = ''
-    await load(search.value, status.value)
+    await load(search.value, status.value, page.value)
   } catch (err) {
     formError.value = err instanceof Error ? err.message : 'Gagal menambah anggota'
   } finally {
@@ -149,5 +157,7 @@ async function submit() {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>
