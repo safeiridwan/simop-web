@@ -6,11 +6,14 @@ import { useAuthStore } from '@/app/stores/auth'
 import { documentsApi } from '@/modules/documents/api'
 import { financeApi } from '../api'
 import { organizationApi } from '@/modules/organization/api'
+import { programsApi } from '@/modules/programs/api'
+import type { Program } from '@/modules/programs/types'
 import type { Unit } from '@/modules/organization/types'
 import {
   JOURNAL_STATUSES,
   JOURNAL_TRANSITIONS,
   type Account,
+  type Fund,
   type Journal,
   type PageMeta,
 } from '../types'
@@ -20,6 +23,8 @@ const journals = ref<Journal[]>([])
 const meta = ref<PageMeta | null>(null)
 const accounts = ref<Account[]>([])
 const units = ref<Unit[]>([])
+const funds = ref<Fund[]>([])
+const programs = ref<Program[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 const saving = ref(false)
@@ -33,12 +38,22 @@ const proofFile = ref<File | null>(null)
 const form = reactive({
   transaction_date: new Date().toISOString().slice(0, 10),
   organization_unit_id: '',
+  program_id: '',
+  fund_id: '',
   description: '',
   lines: [
     { account_id: '', debit: 0, credit: 0 },
     { account_id: '', debit: 0, credit: 0 },
   ],
 })
+
+const programNames = computed(() => Object.fromEntries(programs.value.map((p) => [p.id, p.name])))
+const fundNames = computed(() => Object.fromEntries(funds.value.map((f) => [f.id, f.name])))
+const formPrograms = computed(() =>
+  form.organization_unit_id
+    ? programs.value.filter((p) => p.organization_unit_id === form.organization_unit_id)
+    : programs.value,
+)
 
 const totalDebit = computed(() => form.lines.reduce((sum, l) => sum + (Number(l.debit) || 0), 0))
 const totalCredit = computed(() => form.lines.reduce((sum, l) => sum + (Number(l.credit) || 0), 0))
@@ -48,20 +63,28 @@ async function load() {
   loading.value = true
   error.value = null
   try {
-    const [list, accountList, unitList] = await Promise.all([
+    const [list, accountList, unitList, fundList, programList] = await Promise.all([
       financeApi.listJournals({ search: search.value, status: statusFilter.value, page: page.value }),
       financeApi.listAccounts(),
       organizationApi.listUnits({ pageSize: 200 }),
+      financeApi.listFunds(),
+      programsApi.list({ pageSize: 200 }),
     ])
     journals.value = list.data
     meta.value = list.meta ?? null
     accounts.value = accountList
     units.value = unitList.data
+    funds.value = fundList
+    programs.value = programList.data
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat jurnal'
   } finally {
     loading.value = false
   }
+}
+
+function onUnitChange() {
+  form.program_id = ''
 }
 
 onMounted(load)
@@ -100,12 +123,16 @@ async function submit() {
     await financeApi.createJournal({
       transaction_date: form.transaction_date,
       organization_unit_id: form.organization_unit_id,
+      program_id: form.program_id || undefined,
+      fund_id: form.fund_id || undefined,
       description: form.description || undefined,
       file_id: fileId,
       lines: form.lines.map((l) => ({ account_id: l.account_id, debit: Number(l.debit) || 0, credit: Number(l.credit) || 0 })),
     })
     showForm.value = false
     form.description = ''
+    form.program_id = ''
+    form.fund_id = ''
     proofFile.value = null
     form.lines = [
       { account_id: '', debit: 0, credit: 0 },
@@ -154,13 +181,27 @@ function transitionJournal(id: string, action: string) {
     </header>
 
     <div v-if="showForm" class="mb-6 rounded-lg border border-slate-200 bg-white p-4">
-      <div class="grid gap-3 sm:grid-cols-3">
+      <div class="grid gap-3 sm:grid-cols-2">
         <input v-model="form.transaction_date" type="date" required class="rounded border border-slate-300 px-3 py-2 text-sm" />
-        <select v-model="form.organization_unit_id" required class="rounded border border-slate-300 px-3 py-2 text-sm">
+        <select v-model="form.organization_unit_id" required class="rounded border border-slate-300 px-3 py-2 text-sm" @change="onUnitChange">
           <option value="" disabled>Unit organisasi</option>
           <option v-for="u in units" :key="u.id" :value="u.id">{{ u.name }}</option>
         </select>
-        <input v-model="form.description" placeholder="Catatan" class="rounded border border-slate-300 px-3 py-2 text-sm" />
+        <label class="flex flex-col text-sm text-slate-600">
+          Program (opsional)
+          <select v-model="form.program_id" class="mt-1 rounded border border-slate-300 px-3 py-2 text-sm">
+            <option value="">— Tanpa program —</option>
+            <option v-for="p in formPrograms" :key="p.id" :value="p.id">{{ p.name }}</option>
+          </select>
+        </label>
+        <label class="flex flex-col text-sm text-slate-600">
+          Dana (opsional)
+          <select v-model="form.fund_id" class="mt-1 rounded border border-slate-300 px-3 py-2 text-sm">
+            <option value="">— Tanpa dana —</option>
+            <option v-for="f in funds" :key="f.id" :value="f.id">{{ f.name }}</option>
+          </select>
+        </label>
+        <input v-model="form.description" placeholder="Catatan" class="rounded border border-slate-300 px-3 py-2 text-sm sm:col-span-2" />
       </div>
 
       <div class="mt-3 grid gap-2 sm:grid-cols-2">
@@ -211,12 +252,14 @@ function transitionJournal(id: string, action: string) {
     <p v-else-if="journals.length === 0" class="text-sm text-slate-500">Belum ada jurnal.</p>
 
     <div v-else class="overflow-x-auto">
-      <table class="w-full min-w-[48rem] border-collapse text-sm">
+      <table class="w-full min-w-[56rem] border-collapse text-sm">
         <thead>
           <tr class="border-b border-slate-200 text-left text-slate-500">
             <th class="py-2 pr-4">Nomor</th>
             <th class="py-2 pr-4">Tanggal</th>
             <th class="py-2 pr-4">Catatan</th>
+            <th class="py-2 pr-4">Program</th>
+            <th class="py-2 pr-4">Dana</th>
             <th class="py-2 pr-4 text-right">Jumlah</th>
             <th class="py-2 pr-4">Status</th>
             <th class="py-2"></th>
@@ -229,6 +272,8 @@ function transitionJournal(id: string, action: string) {
             </td>
             <td class="py-2 pr-4 text-slate-600">{{ j.transaction_date || '—' }}</td>
             <td class="py-2 pr-4 text-slate-900">{{ j.description || '—' }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ j.program_id ? programNames[j.program_id] ?? '—' : '—' }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ j.fund_id ? fundNames[j.fund_id] ?? '—' : '—' }}</td>
             <td class="py-2 pr-4 text-right text-slate-700">{{ j.total_debit.toLocaleString('id-ID') }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ j.status }}</td>
             <td class="py-2">

@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { downloadFile } from '@/services/http'
 import { useAuthStore } from '@/app/stores/auth'
+import { programsApi } from '@/modules/programs/api'
+import type { Program } from '@/modules/programs/types'
 import { financeApi } from '../api'
-import type { JournalDetail, Receipt } from '../types'
+import type { Fund, JournalDetail, Receipt } from '../types'
 
 const route = useRoute()
 const id = route.params.id as string
@@ -13,17 +15,37 @@ const auth = useAuthStore()
 
 const detail = ref<JournalDetail | null>(null)
 const receipts = ref<Receipt[]>([])
+const funds = ref<Fund[]>([])
+const programs = ref<Program[]>([])
 const loading = ref(true)
 const saving = ref(false)
 const error = ref<string | null>(null)
+
+const programName = computed(() => {
+  const pid = detail.value?.journal.program_id
+  if (!pid) return '—'
+  return programs.value.find((p) => p.id === pid)?.name ?? '—'
+})
+const fundName = computed(() => {
+  const fid = detail.value?.journal.fund_id
+  if (!fid) return '—'
+  return funds.value.find((f) => f.id === fid)?.name ?? '—'
+})
 
 async function load() {
   loading.value = true
   error.value = null
   try {
-    const [d, r] = await Promise.all([financeApi.getJournal(id), financeApi.listJournalReceipts(id)])
+    const [d, r, fundList, programList] = await Promise.all([
+      financeApi.getJournal(id),
+      financeApi.listJournalReceipts(id),
+      financeApi.listFunds(),
+      programsApi.list({ pageSize: 200 }),
+    ])
     detail.value = d
     receipts.value = r
+    funds.value = fundList
+    programs.value = programList.data
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat jurnal'
   } finally {
@@ -66,6 +88,7 @@ async function verify(receipt: Receipt) {
         <h1 class="text-xl font-semibold text-slate-900">{{ detail.journal.journal_number }}</h1>
         <p class="text-sm text-slate-500">{{ detail.journal.transaction_date }} · {{ detail.journal.status }}</p>
         <p v-if="detail.journal.description" class="text-sm text-slate-600">{{ detail.journal.description }}</p>
+        <p class="text-sm text-slate-500">Program: {{ programName }} · Dana: {{ fundName }}</p>
       </header>
 
       <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
