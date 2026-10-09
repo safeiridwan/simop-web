@@ -19,4 +19,10 @@ export const financeRoutes: RouteRecordRaw[] = [
     component: () => import('./pages/ReimbursementsPage.vue'),
     meta: read,
   },
+  {
+    path: 'finance/receipts',
+    name: 'finance-receipts',
+    component: () => import('./pages/ReceiptsPage.vue'),
+    meta: read,
+  },
 ]

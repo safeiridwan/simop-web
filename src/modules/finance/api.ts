@@ -63,6 +63,7 @@ export const financeApi = {
     apiPost<Reimbursement>(`/api/v1/finance/reimbursements/${id}/${action}`),
 
   listReceipts: (reimbursementId: string) => apiGet<Receipt[]>(`/api/v1/finance/receipts?reimbursement_id=${reimbursementId}`),
+  listAllReceipts: () => apiGet<Receipt[]>('/api/v1/finance/receipts'),
   createReceipt: (input: { reimbursement_id?: string; journal_entry_id?: string; receipt_number: string; receipt_date?: string }) =>
     apiPost<Receipt>('/api/v1/finance/receipts', input),
   verifyReceipt: (id: string) => apiPost<Receipt>(`/api/v1/finance/receipts/${id}/verify`),

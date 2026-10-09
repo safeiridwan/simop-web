@@ -22,6 +22,7 @@ import { programRoutes } from '@/modules/programs/routes'
 import { reportRoutes } from '@/modules/reports/routes'
 import { roleRoutes } from '@/modules/roles/routes'
 import { securityRoutes } from '@/modules/security/routes'
+import { settingsRoutes } from '@/modules/settings/routes'
 import { userRoutes } from '@/modules/users/routes'
 
 export const router = createRouter({
@@ -51,6 +52,7 @@ export const router = createRouter({
         ...electionReadinessRoutes,
         ...notificationRoutes,
         ...securityRoutes,
+        ...settingsRoutes,
         ...userRoutes,
         ...roleRoutes,
         ...permissionRoutes,

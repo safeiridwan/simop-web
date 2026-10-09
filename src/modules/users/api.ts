@@ -8,6 +8,11 @@ export interface ListUsersQuery {
   status?: string
 }
 
+export interface ScopeGrant {
+  organization_unit_id: string
+  include_descendants: boolean
+}
+
 export const usersApi = {
   list: (query: ListUsersQuery = {}) => {
     const params = new URLSearchParams()
@@ -25,4 +30,12 @@ export const usersApi = {
     apiPost<User>(`/api/v1/users/${id}/roles`, { role_codes: roleCodes }),
   removeRole: (id: string, roleCode: string) =>
     apiDelete<User>(`/api/v1/users/${id}/roles/${roleCode}`),
+  scopes: (id: string) => apiGet<ScopeGrant[]>(`/api/v1/users/${id}/scopes`),
+  addScope: (id: string, organizationUnitId: string, includeDescendants: boolean) =>
+    apiPost<ScopeGrant>(`/api/v1/users/${id}/scopes`, {
+      organization_unit_id: organizationUnitId,
+      include_descendants: includeDescendants,
+    }),
+  removeScope: (id: string, organizationUnitId: string) =>
+    apiDelete<{ status: string }>(`/api/v1/users/${id}/scopes/${organizationUnitId}`),
 }

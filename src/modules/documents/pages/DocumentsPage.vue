@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { organizationApi } from '@/modules/organization/api'
 import type { Unit } from '@/modules/organization/types'
@@ -8,6 +8,7 @@ import { documentsApi } from '../api'
 import type { Document } from '../types'
 
 const router = useRouter()
+const route = useRoute()
 const documents = ref<Document[]>([])
 const units = ref<Unit[]>([])
 const loading = ref(true)
@@ -18,13 +19,14 @@ const selectedFile = ref<File | null>(null)
 
 const form = reactive({ organization_unit_id: '', document_type: '', document_number: '', title: '', document_date: '' })
 const search = ref('')
+const typeFilter = ref(typeof route.query.type === 'string' ? route.query.type : '')
 
 async function load() {
   loading.value = true
   error.value = null
   try {
     const [list, unitList] = await Promise.all([
-      documentsApi.list({ search: search.value }),
+      documentsApi.list({ search: search.value, documentType: typeFilter.value }),
       organizationApi.listUnits({ pageSize: 200 }),
     ])
     documents.value = list.data

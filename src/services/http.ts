@@ -98,6 +98,10 @@ export async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
   return (await request<T>('PATCH', path, body)).data
 }
 
+export async function apiPut<T>(path: string, body?: unknown): Promise<T> {
+  return (await request<T>('PUT', path, body)).data
+}
+
 export async function apiDelete<T>(path: string): Promise<T> {
   return (await request<T>('DELETE', path)).data
 }

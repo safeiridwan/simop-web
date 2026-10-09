@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/app/stores/auth'
@@ -14,35 +14,101 @@ interface NavItem {
   permission?: string
 }
 
-const nav: NavItem[] = [
-  { label: 'Dashboard', to: '/dashboard' },
-  { label: 'Orang', to: '/people', permission: 'persons:read' },
-  { label: 'Anggota', to: '/members', permission: 'members:read' },
-  { label: 'Non-Anggota', to: '/non-party', permission: 'members:read' },
-  { label: 'Organisasi', to: '/organization', permission: 'organization:read' },
-  { label: 'Kader', to: '/cadres', permission: 'cadre:read' },
-  { label: 'Pelatihan', to: '/cadre-training', permission: 'cadre:read' },
-  { label: 'Program', to: '/programs', permission: 'programs:read' },
-  { label: 'Kegiatan', to: '/activities', permission: 'programs:read' },
-  { label: 'Keuangan', to: '/finance/journals', permission: 'finance:read' },
-  { label: 'Akun', to: '/finance/accounts', permission: 'finance:read' },
-  { label: 'Dana', to: '/finance/funds', permission: 'finance:read' },
-  { label: 'Anggaran', to: '/finance/budgets', permission: 'finance:read' },
-  { label: 'SPJ', to: '/finance/reimbursements', permission: 'finance:read' },
-  { label: 'Dokumen', to: '/documents', permission: 'documents:read' },
-  { label: 'Rapat', to: '/meetings', permission: 'governance:read' },
-  { label: 'Tugas', to: '/tasks', permission: 'governance:read' },
-  { label: 'Etik', to: '/ethics/cases', permission: 'ethics:read' },
-  { label: 'Aset', to: '/assets', permission: 'assets:read' },
-  { label: 'Laporan', to: '/reports', permission: 'reports:read' },
-  { label: 'Kualitas Data', to: '/data-quality', permission: 'data-quality:read' },
-  { label: 'Kesiapan Data', to: '/election-readiness', permission: 'election-readiness:read' },
-  { label: 'Notifikasi', to: '/notifications' },
-  { label: 'Keamanan', to: '/security/events', permission: 'security:read' },
-  { label: 'Pengguna', to: '/settings/users', permission: 'users:read' },
-  { label: 'Peran', to: '/settings/roles', permission: 'roles:read' },
-  { label: 'Izin', to: '/settings/permissions', permission: 'permissions:read' },
+interface NavGroup {
+  label: string
+  items: NavItem[]
+}
+
+// Grouped navigation (plan §43). Groups with no visible item are hidden.
+const navGroups: NavGroup[] = [
+  {
+    label: 'Orang',
+    items: [
+      { label: 'Semua Orang', to: '/people', permission: 'persons:read' },
+      { label: 'Anggota', to: '/members', permission: 'members:read' },
+      { label: 'Simpatisan', to: '/non-party/sympathizers', permission: 'members:read' },
+      { label: 'Relawan', to: '/non-party/volunteers', permission: 'members:read' },
+      { label: 'Penerima Manfaat', to: '/non-party/beneficiaries', permission: 'members:read' },
+    ],
+  },
+  {
+    label: 'Kader',
+    items: [
+      { label: 'Daftar Kader', to: '/cadres', permission: 'cadre:read' },
+      { label: 'Pelatihan', to: '/cadre-training', permission: 'cadre:read' },
+    ],
+  },
+  {
+    label: 'Organisasi',
+    items: [{ label: 'Struktur', to: '/organization', permission: 'organization:read' }],
+  },
+  {
+    label: 'Program',
+    items: [
+      { label: 'Semua Program', to: '/programs', permission: 'programs:read' },
+      { label: 'Kegiatan', to: '/activities', permission: 'programs:read' },
+    ],
+  },
+  {
+    label: 'Keuangan',
+    items: [
+      { label: 'Jurnal', to: '/finance/journals', permission: 'finance:read' },
+      { label: 'Akun', to: '/finance/accounts', permission: 'finance:read' },
+      { label: 'Dana', to: '/finance/funds', permission: 'finance:read' },
+      { label: 'Anggaran', to: '/finance/budgets', permission: 'finance:read' },
+      { label: 'SPJ', to: '/finance/reimbursements', permission: 'finance:read' },
+      { label: 'Bukti Transaksi', to: '/finance/receipts', permission: 'finance:read' },
+    ],
+  },
+  {
+    label: 'Tata Kelola',
+    items: [
+      { label: 'Rapat', to: '/meetings', permission: 'governance:read' },
+      { label: 'Tugas', to: '/tasks', permission: 'governance:read' },
+      { label: 'Surat', to: '/documents?type=SURAT', permission: 'documents:read' },
+      { label: 'Dokumen', to: '/documents', permission: 'documents:read' },
+    ],
+  },
+  {
+    label: 'Etik',
+    items: [{ label: 'Kasus', to: '/ethics/cases', permission: 'ethics:read' }],
+  },
+  {
+    label: 'Aset',
+    items: [
+      { label: 'Daftar Aset', to: '/assets', permission: 'assets:read' },
+      { label: 'Kategori & Lokasi', to: '/assets/categories', permission: 'assets:read' },
+    ],
+  },
+  {
+    label: 'Laporan & Data',
+    items: [
+      { label: 'Laporan', to: '/reports', permission: 'reports:read' },
+      { label: 'Kualitas Data', to: '/data-quality', permission: 'data-quality:read' },
+      { label: 'Kesiapan Data', to: '/election-readiness', permission: 'election-readiness:read' },
+    ],
+  },
+  {
+    label: 'Administrasi',
+    items: [
+      { label: 'Pengguna', to: '/settings/users', permission: 'users:read' },
+      { label: 'Peran', to: '/settings/roles', permission: 'roles:read' },
+      { label: 'Izin', to: '/settings/permissions', permission: 'permissions:read' },
+      { label: 'Organization Scope', to: '/settings/scopes', permission: 'users:read' },
+      { label: 'Pengaturan Sistem', to: '/settings/system', permission: 'settings:read' },
+      { label: 'Keamanan', to: '/security/events', permission: 'security:read' },
+    ],
+  },
 ]
+
+const visibleGroups = computed(() =>
+  navGroups
+    .map((group) => ({
+      label: group.label,
+      items: group.items.filter((item) => !item.permission || auth.can(item.permission)),
+    }))
+    .filter((group) => group.items.length > 0),
+)
 
 const mobileNavOpen = ref(false)
 
@@ -71,7 +137,7 @@ async function onLogout() {
 
     <!-- Sidebar: drawer on mobile, static on lg+ -->
     <aside
-      class="fixed inset-y-0 left-0 z-40 w-64 max-w-[80vw] -translate-x-full border-r border-slate-200 bg-white p-4 transition-transform duration-200 lg:translate-x-0"
+      class="fixed inset-y-0 left-0 z-40 w-64 max-w-[80vw] -translate-x-full overflow-y-auto border-r border-slate-200 bg-white p-4 transition-transform duration-200 lg:translate-x-0"
       :class="{ 'translate-x-0': mobileNavOpen }"
     >
       <div class="mb-6 flex items-center justify-between">
@@ -87,17 +153,39 @@ async function onLogout() {
           </svg>
         </button>
       </div>
-      <nav class="space-y-1">
-        <template v-for="item in nav" :key="item.to">
+
+      <nav class="space-y-4">
+        <div>
           <router-link
-            v-if="!item.permission || auth.can(item.permission)"
+            to="/dashboard"
+            class="block rounded px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+            active-class="bg-brand-50 font-medium text-brand-700"
+          >
+            Dashboard
+          </router-link>
+          <router-link
+            to="/notifications"
+            class="block rounded px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+            active-class="bg-brand-50 font-medium text-brand-700"
+          >
+            Notifikasi
+          </router-link>
+        </div>
+
+        <div v-for="group in visibleGroups" :key="group.label">
+          <p class="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            {{ group.label }}
+          </p>
+          <router-link
+            v-for="item in group.items"
+            :key="item.to"
             :to="item.to"
             class="block rounded px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
             active-class="bg-brand-50 font-medium text-brand-700"
           >
             {{ item.label }}
           </router-link>
-        </template>
+        </div>
       </nav>
     </aside>
 
