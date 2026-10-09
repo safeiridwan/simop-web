@@ -75,6 +75,33 @@ async function onUpdateUnit(input: CreateUnitInput) {
   }
 }
 
+async function deactivateUnit() {
+  if (!window.confirm('Nonaktifkan unit ini? Riwayat tetap tersimpan.')) return
+  saving.value = true
+  error.value = null
+  try {
+    await organizationApi.deactivateUnit(id)
+    await refresh()
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Gagal menonaktifkan unit'
+  } finally {
+    saving.value = false
+  }
+}
+
+async function reactivateUnit() {
+  saving.value = true
+  error.value = null
+  try {
+    await organizationApi.updateUnit(id, { status: 'ACTIVE' })
+    await refresh()
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Gagal mengaktifkan unit'
+  } finally {
+    saving.value = false
+  }
+}
+
 async function addPosition() {
   saving.value = true
   try {
@@ -159,11 +186,41 @@ async function endOfficer(officerId: string) {
     <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
 
     <template v-else-if="unit">
-      <header class="mb-6">
-        <router-link to="/organization" class="text-sm text-brand-600 hover:underline">← Struktur</router-link>
-        <h1 class="text-xl font-semibold text-slate-900">{{ unit.name }}</h1>
-        <p class="font-mono text-xs text-slate-500">{{ unit.code }} · {{ unit.unit_type_code }}</p>
-        <p v-if="parentName" class="mt-1 text-sm text-slate-500">Induk: {{ parentName }}</p>
+      <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <router-link to="/organization" class="text-sm text-brand-600 hover:underline">← Struktur</router-link>
+          <h1 class="text-xl font-semibold text-slate-900">
+            {{ unit.name }}
+            <span
+              v-if="unit.status !== 'ACTIVE'"
+              class="ml-2 rounded bg-slate-200 px-1.5 py-0.5 align-middle text-xs font-medium text-slate-600"
+            >
+              Nonaktif
+            </span>
+          </h1>
+          <p class="font-mono text-xs text-slate-500">{{ unit.code }} · {{ unit.unit_type_code }}</p>
+          <p v-if="parentName" class="mt-1 text-sm text-slate-500">Induk: {{ parentName }}</p>
+        </div>
+        <div class="flex gap-2">
+          <button
+            v-if="unit.status === 'ACTIVE'"
+            type="button"
+            :disabled="saving"
+            class="rounded border border-red-300 px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 sm:w-fit"
+            @click="deactivateUnit"
+          >
+            Nonaktifkan
+          </button>
+          <button
+            v-else
+            type="button"
+            :disabled="saving"
+            class="rounded border border-slate-300 px-3 py-2 text-sm disabled:opacity-50 sm:w-fit"
+            @click="reactivateUnit"
+          >
+            Aktifkan
+          </button>
+        </div>
       </header>
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">

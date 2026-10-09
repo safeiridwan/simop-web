@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
 import { useAuthStore } from '@/app/stores/auth'
 import { dataQualityApi } from '../api'
-import { ISSUE_STATUSES, SEVERITIES, ruleLabel, severityLabel, type DataQualityIssue, type SummaryRow } from '../types'
+import { ISSUE_STATUSES, SEVERITIES, ruleLabel, severityLabel, type DataQualityIssue, type PageMeta, type SummaryRow } from '../types'
 
 const auth = useAuthStore()
 const issues = ref<DataQualityIssue[]>([])
+const meta = ref<PageMeta | null>(null)
 const summary = ref<SummaryRow[]>([])
 const loading = ref(true)
 const scanning = ref(false)
@@ -16,6 +18,7 @@ const notice = ref<string | null>(null)
 
 const statusFilter = ref('OPEN')
 const severityFilter = ref('')
+const page = ref(1)
 
 const canResolve = computed(() => auth.can('data-quality:resolve'))
 
@@ -38,10 +41,11 @@ async function load() {
   error.value = null
   try {
     const [list, sums] = await Promise.all([
-      dataQualityApi.issues({ status: statusFilter.value, severity: severityFilter.value }),
+      dataQualityApi.issues({ status: statusFilter.value, severity: severityFilter.value, page: page.value }),
       dataQualityApi.summary(),
     ])
     issues.value = list.data
+    meta.value = list.meta ?? null
     summary.value = sums
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat data quality'
@@ -51,6 +55,16 @@ async function load() {
 }
 
 onMounted(load)
+
+function onFilter() {
+  page.value = 1
+  void load()
+}
+
+function onPageChange(target: number) {
+  page.value = target
+  void load()
+}
 
 async function runScan() {
   scanning.value = true
@@ -110,14 +124,14 @@ async function resolve(id: string, status: string) {
     </div>
 
     <div class="mb-4 flex flex-wrap gap-2">
-      <select v-model="statusFilter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="load">
+      <select v-model="statusFilter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="onFilter">
         <option v-for="s in ISSUE_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
       </select>
-      <select v-model="severityFilter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="load">
+      <select v-model="severityFilter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="onFilter">
         <option value="">Semua tingkat</option>
         <option v-for="s in SEVERITIES" :key="s.value" :value="s.value">{{ s.label }}</option>
       </select>
-      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="load">Muat ulang</button>
+      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="onFilter">Muat ulang</button>
     </div>
 
     <p v-if="loading" class="text-sm text-slate-500">Memuat...</p>
@@ -167,5 +181,7 @@ async function resolve(id: string, status: string) {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>

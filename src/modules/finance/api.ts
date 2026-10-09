@@ -25,8 +25,8 @@ export const financeApi = {
   createFund: (input: { code: string; name: string; description?: string }) =>
     apiPost<Fund>('/api/v1/finance/funds', input),
 
-  listBudgets: (query: { fiscalYear?: number; status?: string } = {}) => {
-    const params = new URLSearchParams({ page: '1', page_size: '50' })
+  listBudgets: (query: { fiscalYear?: number; status?: string; page?: number; pageSize?: number } = {}) => {
+    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 20) })
     if (query.fiscalYear) params.set('fiscal_year', String(query.fiscalYear))
     if (query.status) params.set('status', query.status)
     return apiGetPage<Budget[], PageMeta>(`/api/v1/finance/budgets?${params.toString()}`)
@@ -35,8 +35,8 @@ export const financeApi = {
     apiPost<Budget>('/api/v1/finance/budgets', input),
   transitionBudget: (id: string, action: string) => apiPost<Budget>(`/api/v1/finance/budgets/${id}/${action}`),
 
-  listJournals: (query: { status?: string; search?: string } = {}) => {
-    const params = new URLSearchParams({ page: '1', page_size: '50' })
+  listJournals: (query: { status?: string; search?: string; page?: number; pageSize?: number } = {}) => {
+    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 20) })
     if (query.status) params.set('status', query.status)
     if (query.search) params.set('search', query.search)
     return apiGetPage<Journal[], PageMeta>(`/api/v1/finance/journals?${params.toString()}`)
@@ -48,12 +48,13 @@ export const financeApi = {
     organization_unit_id: string
     program_id?: string
     fund_id?: string
+    file_id?: string
     lines: JournalLineInput[]
   }) => apiPost<Journal>('/api/v1/finance/journals', input),
   transitionJournal: (id: string, action: string) => apiPost<Journal>(`/api/v1/finance/journals/${id}/${action}`),
 
-  listReimbursements: (query: { status?: string } = {}) => {
-    const params = new URLSearchParams({ page: '1', page_size: '50' })
+  listReimbursements: (query: { status?: string; page?: number; pageSize?: number } = {}) => {
+    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 20) })
     if (query.status) params.set('status', query.status)
     return apiGetPage<Reimbursement[], PageMeta>(`/api/v1/finance/reimbursements?${params.toString()}`)
   },
@@ -63,7 +64,7 @@ export const financeApi = {
     apiPost<Reimbursement>(`/api/v1/finance/reimbursements/${id}/${action}`),
 
   listReceipts: (reimbursementId: string) => apiGet<Receipt[]>(`/api/v1/finance/receipts?reimbursement_id=${reimbursementId}`),
-  listAllReceipts: () => apiGet<Receipt[]>('/api/v1/finance/receipts'),
+  listJournalReceipts: (journalId: string) => apiGet<Receipt[]>(`/api/v1/finance/receipts?journal_entry_id=${journalId}`),
   createReceipt: (input: { reimbursement_id?: string; journal_entry_id?: string; receipt_number: string; receipt_date?: string }) =>
     apiPost<Receipt>('/api/v1/finance/receipts', input),
   verifyReceipt: (id: string) => apiPost<Receipt>(`/api/v1/finance/receipts/${id}/verify`),

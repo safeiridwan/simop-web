@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
+import { useClientPage } from '@/composables/useClientPage'
 import { financeApi } from '../api'
 import type { Fund } from '../types'
 
 const funds = ref<Fund[]>([])
+const { paged: pagedFunds, meta: fundsMeta, setPage: setFundsPage, reset: resetFundsPage } = useClientPage(funds)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const showForm = ref(false)
@@ -15,6 +18,7 @@ async function load() {
   loading.value = true
   try {
     funds.value = await financeApi.listFunds()
+    resetFundsPage()
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat dana'
   } finally {
@@ -74,7 +78,7 @@ async function submit() {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="f in funds" :key="f.id" class="border-b border-slate-100">
+          <tr v-for="f in pagedFunds" :key="f.id" class="border-b border-slate-100">
             <td class="py-2 pr-4 font-mono text-xs text-slate-500">{{ f.code }}</td>
             <td class="py-2 pr-4 text-slate-900">{{ f.name }}</td>
             <td class="py-2 text-slate-600">{{ f.description || '—' }}</td>
@@ -82,5 +86,7 @@ async function submit() {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="fundsMeta" @change="setFundsPage" />
   </section>
 </template>

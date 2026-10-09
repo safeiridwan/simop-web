@@ -2,14 +2,16 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import Pagination from '@/components/Pagination.vue'
 import { organizationApi } from '@/modules/organization/api'
 import type { Unit } from '@/modules/organization/types'
 import { documentsApi } from '../api'
-import type { Document } from '../types'
+import type { Document, PageMeta } from '../types'
 
 const router = useRouter()
 const route = useRoute()
 const documents = ref<Document[]>([])
+const meta = ref<PageMeta | null>(null)
 const units = ref<Unit[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
@@ -20,16 +22,18 @@ const selectedFile = ref<File | null>(null)
 const form = reactive({ organization_unit_id: '', document_type: '', document_number: '', title: '', document_date: '' })
 const search = ref('')
 const typeFilter = ref(typeof route.query.type === 'string' ? route.query.type : '')
+const page = ref(1)
 
 async function load() {
   loading.value = true
   error.value = null
   try {
     const [list, unitList] = await Promise.all([
-      documentsApi.list({ search: search.value, documentType: typeFilter.value }),
+      documentsApi.list({ search: search.value, documentType: typeFilter.value, page: page.value }),
       organizationApi.listUnits({ pageSize: 200 }),
     ])
     documents.value = list.data
+    meta.value = list.meta ?? null
     units.value = unitList.data
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat dokumen'
@@ -39,6 +43,16 @@ async function load() {
 }
 
 onMounted(load)
+
+function onFilter() {
+  page.value = 1
+  void load()
+}
+
+function onPageChange(target: number) {
+  page.value = target
+  void load()
+}
 
 function onFile(event: Event) {
   const input = event.target as HTMLInputElement
@@ -76,7 +90,7 @@ async function submit() {
     <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 class="text-xl font-semibold text-slate-900">Dokumen</h1>
-        <p class="text-sm text-slate-500">{{ documents.length }} dokumen</p>
+        <p class="text-sm text-slate-500">{{ meta?.total ?? documents.length }} dokumen</p>
       </div>
       <button type="button" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:w-fit" @click="showForm = !showForm">
         {{ showForm ? 'Batal' : 'Tambah Dokumen' }}
@@ -99,8 +113,8 @@ async function submit() {
     </form>
 
     <div class="mb-4 flex flex-wrap gap-2">
-      <input v-model="search" placeholder="Cari judul atau nomor" class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64" @keyup.enter="load" />
-      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="load">Cari</button>
+      <input v-model="search" placeholder="Cari judul atau nomor" class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64" @keyup.enter="onFilter" />
+      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="onFilter">Cari</button>
     </div>
 
     <p v-if="loading" class="text-sm text-slate-500">Memuat...</p>
@@ -131,5 +145,7 @@ async function submit() {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>

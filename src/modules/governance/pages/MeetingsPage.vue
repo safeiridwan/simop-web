@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
 import { organizationApi } from '@/modules/organization/api'
 import type { Unit } from '@/modules/organization/types'
 import { meetingsApi } from '../api'
-import type { Meeting } from '../types'
+import type { Meeting, PageMeta } from '../types'
 
 const meetings = ref<Meeting[]>([])
+const meta = ref<PageMeta | null>(null)
 const units = ref<Unit[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 const showForm = ref(false)
 const submitting = ref(false)
+const page = ref(1)
 
 const form = reactive({ organization_unit_id: '', title: '', meeting_type: '', start_at: '', location: '' })
 
@@ -19,8 +22,12 @@ async function load() {
   loading.value = true
   error.value = null
   try {
-    const [list, unitList] = await Promise.all([meetingsApi.list(), organizationApi.listUnits({ pageSize: 200 })])
+    const [list, unitList] = await Promise.all([
+      meetingsApi.list({ page: page.value }),
+      organizationApi.listUnits({ pageSize: 200 }),
+    ])
     meetings.value = list.data
+    meta.value = list.meta ?? null
     units.value = unitList.data
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat rapat'
@@ -30,6 +37,11 @@ async function load() {
 }
 
 onMounted(load)
+
+function onPageChange(target: number) {
+  page.value = target
+  void load()
+}
 
 async function submit() {
   submitting.value = true
@@ -61,7 +73,7 @@ async function submit() {
     <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 class="text-xl font-semibold text-slate-900">Rapat</h1>
-        <p class="text-sm text-slate-500">{{ meetings.length }} rapat</p>
+        <p class="text-sm text-slate-500">{{ meta?.total ?? meetings.length }} rapat</p>
       </div>
       <button type="button" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:w-fit" @click="showForm = !showForm">
         {{ showForm ? 'Batal' : 'Tambah Rapat' }}
@@ -108,5 +120,7 @@ async function submit() {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>

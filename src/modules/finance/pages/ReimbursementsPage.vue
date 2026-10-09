@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
 import PersonPicker from '@/components/PersonPicker.vue'
 import { useAuthStore } from '@/app/stores/auth'
 import type { Person } from '@/modules/people/types'
 import { organizationApi } from '@/modules/organization/api'
 import type { Unit } from '@/modules/organization/types'
 import { financeApi } from '../api'
-import { REIMBURSEMENT_TRANSITIONS, type Receipt, type Reimbursement } from '../types'
+import { REIMBURSEMENT_TRANSITIONS, type PageMeta, type Receipt, type Reimbursement } from '../types'
 
 const auth = useAuthStore()
 const reimbursements = ref<Reimbursement[]>([])
+const meta = ref<PageMeta | null>(null)
 const units = ref<Unit[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
@@ -18,6 +20,7 @@ const saving = ref(false)
 const showForm = ref(false)
 const openRow = ref<string | null>(null)
 const receipts = ref<Receipt[]>([])
+const page = ref(1)
 const receiptForm = reactive({ receipt_number: '', receipt_date: '' })
 
 const selectedPerson = ref<Person | null>(null)
@@ -27,8 +30,12 @@ async function load() {
   loading.value = true
   error.value = null
   try {
-    const [list, unitList] = await Promise.all([financeApi.listReimbursements(), organizationApi.listUnits({ pageSize: 200 })])
+    const [list, unitList] = await Promise.all([
+      financeApi.listReimbursements({ page: page.value }),
+      organizationApi.listUnits({ pageSize: 200 }),
+    ])
     reimbursements.value = list.data
+    meta.value = list.meta ?? null
     units.value = unitList.data
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat reimbursement'
@@ -38,6 +45,11 @@ async function load() {
 }
 
 onMounted(load)
+
+function onPageChange(target: number) {
+  page.value = target
+  void load()
+}
 
 async function run(fn: () => Promise<unknown>) {
   saving.value = true
@@ -116,7 +128,7 @@ function transitionReimbursement(id: string, action: string) {
     <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 class="text-xl font-semibold text-slate-900">Reimbursement (SPJ)</h1>
-        <p class="text-sm text-slate-500">{{ reimbursements.length }} pengajuan</p>
+        <p class="text-sm text-slate-500">{{ meta?.total ?? reimbursements.length }} pengajuan</p>
       </div>
       <button type="button" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:w-fit" @click="showForm = !showForm">
         {{ showForm ? 'Batal' : 'Ajukan Reimbursement' }}
@@ -182,5 +194,7 @@ function transitionReimbursement(id: string, action: string) {
         </div>
       </div>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>

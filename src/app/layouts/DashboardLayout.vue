@@ -49,7 +49,7 @@ const navGroups: NavGroup[] = [
       { label: 'Dana', to: '/finance/funds', permission: 'finance:read' },
       { label: 'Anggaran', to: '/finance/budgets', permission: 'finance:read' },
       { label: 'SPJ', to: '/finance/reimbursements', permission: 'finance:read' },
-      { label: 'Bukti Transaksi', to: '/finance/receipts', permission: 'finance:read' },
+      { label: 'Laporan Keuangan', to: '/finance/reports', permission: 'reports:read' },
     ],
   },
   {

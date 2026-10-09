@@ -41,7 +41,10 @@ export const cadreApi = {
   updateStatus: (id: string, status: string, notes?: string) =>
     apiPatch<CadreProfile>(`/api/v1/cadres/${id}`, { status, notes }),
 
-  listTrainings: () => apiGetPage<Training[], PageMeta>('/api/v1/cadre-trainings?page=1&page_size=50'),
+  listTrainings: (query: { page?: number; pageSize?: number } = {}) =>
+    apiGetPage<Training[], PageMeta>(
+      `/api/v1/cadre-trainings?page=${query.page ?? 1}&page_size=${query.pageSize ?? 20}`,
+    ),
   createTraining: (input: { name: string; description?: string; status?: string }) =>
     apiPost<Training>('/api/v1/cadre-trainings', input),
   getTraining: (id: string) => apiGet<TrainingDetail>(`/api/v1/cadre-trainings/${id}`),

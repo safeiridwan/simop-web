@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
 import PersonPicker from '@/components/PersonPicker.vue'
 import type { Person } from '@/modules/people/types'
 import { organizationApi } from '@/modules/organization/api'
 import type { Unit } from '@/modules/organization/types'
 import { useAuthStore } from '@/app/stores/auth'
 import { tasksApi } from '../api'
-import { ITEM_STATUSES, TASK_PRIORITIES, taskPriorityLabel, type Task } from '../types'
+import { ITEM_STATUSES, TASK_PRIORITIES, taskPriorityLabel, type PageMeta, type Task } from '../types'
 
 const auth = useAuthStore()
 const tasks = ref<Task[]>([])
+const meta = ref<PageMeta | null>(null)
 const units = ref<Unit[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
@@ -20,6 +22,7 @@ const selectedPerson = ref<Person | null>(null)
 
 const search = ref('')
 const statusFilter = ref('')
+const page = ref(1)
 const form = reactive({ organization_unit_id: '', title: '', description: '', due_date: '', priority: 'NORMAL' })
 
 async function load() {
@@ -27,10 +30,11 @@ async function load() {
   error.value = null
   try {
     const [list, unitList] = await Promise.all([
-      tasksApi.list({ search: search.value, status: statusFilter.value }),
+      tasksApi.list({ search: search.value, status: statusFilter.value, page: page.value }),
       organizationApi.listUnits({ pageSize: 200 }),
     ])
     tasks.value = list.data
+    meta.value = list.meta ?? null
     units.value = unitList.data
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat tugas'
@@ -40,6 +44,16 @@ async function load() {
 }
 
 onMounted(load)
+
+function onFilter() {
+  page.value = 1
+  void load()
+}
+
+function onPageChange(target: number) {
+  page.value = target
+  void load()
+}
 
 async function submit() {
   submitting.value = true
@@ -87,7 +101,7 @@ function completeTask(id: string) {
     <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 class="text-xl font-semibold text-slate-900">Tugas</h1>
-        <p class="text-sm text-slate-500">{{ tasks.length }} tugas</p>
+        <p class="text-sm text-slate-500">{{ meta?.total ?? tasks.length }} tugas</p>
       </div>
       <button type="button" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:w-fit" @click="showForm = !showForm">
         {{ showForm ? 'Batal' : 'Tambah Tugas' }}
@@ -115,12 +129,12 @@ function completeTask(id: string) {
     </div>
 
     <div class="mb-4 flex flex-wrap gap-2">
-      <input v-model="search" placeholder="Cari tugas" class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64" @keyup.enter="load" />
-      <select v-model="statusFilter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="load">
+      <input v-model="search" placeholder="Cari tugas" class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64" @keyup.enter="onFilter" />
+      <select v-model="statusFilter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="onFilter">
         <option value="">Semua status</option>
         <option v-for="s in ITEM_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
       </select>
-      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="load">Cari</button>
+      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="onFilter">Cari</button>
     </div>
 
     <p v-if="loading" class="text-sm text-slate-500">Memuat...</p>
@@ -160,5 +174,7 @@ function completeTask(id: string) {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>

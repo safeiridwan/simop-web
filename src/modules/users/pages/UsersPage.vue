@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
 import { useUsers } from '../composables/useUsers'
 import type { CreateUserInput, User } from '../types'
 
-const { users, loading, error, load, create } = useUsers()
+const { users, meta, loading, error, load, create } = useUsers()
 
 const search = ref('')
+const page = ref(1)
 const showForm = ref(false)
 const submitting = ref(false)
 const formError = ref<string | null>(null)
@@ -16,7 +18,13 @@ const rolesInput = ref('')
 onMounted(() => void load())
 
 function onSearch() {
-  void load(search.value)
+  page.value = 1
+  void load(search.value, page.value)
+}
+
+function onPageChange(target: number) {
+  page.value = target
+  void load(search.value, page.value)
 }
 
 async function submit() {
@@ -48,7 +56,10 @@ function roleLabel(user: User): string {
 <template>
   <section>
     <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <h1 class="text-xl font-semibold text-slate-900">Pengguna</h1>
+      <div>
+        <h1 class="text-xl font-semibold text-slate-900">Pengguna</h1>
+        <p class="text-sm text-slate-500">{{ meta?.total ?? users.length }} pengguna</p>
+      </div>
       <button
         type="button"
         class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
@@ -119,5 +130,7 @@ function roleLabel(user: User): string {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>

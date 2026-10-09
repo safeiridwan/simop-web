@@ -15,11 +15,13 @@ export interface ListProgramsQuery {
   search?: string
   status?: string
   organizationUnitId?: string
+  page?: number
+  pageSize?: number
 }
 
 export const programsApi = {
   list: (query: ListProgramsQuery = {}) => {
-    const params = new URLSearchParams({ page: '1', page_size: '50' })
+    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 20) })
     if (query.search) params.set('search', query.search)
     if (query.status) params.set('status', query.status)
     if (query.organizationUnitId) params.set('organization_unit_id', query.organizationUnitId)
@@ -55,11 +57,13 @@ export interface ListActivitiesQuery {
   programId?: string
   search?: string
   status?: string
+  page?: number
+  pageSize?: number
 }
 
 export const activitiesApi = {
   list: (query: ListActivitiesQuery = {}) => {
-    const params = new URLSearchParams({ page: '1', page_size: '50' })
+    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 20) })
     if (query.programId) params.set('program_id', query.programId)
     if (query.search) params.set('search', query.search)
     if (query.status) params.set('status', query.status)

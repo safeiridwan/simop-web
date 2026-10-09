@@ -29,6 +29,7 @@ export const organizationApi = {
   createUnit: (input: CreateUnitInput) => apiPost<Unit>('/api/v1/organization-units', input),
   updateUnit: (id: string, input: Partial<CreateUnitInput> & { unit_type_id?: string }) =>
     apiPatch<Unit>(`/api/v1/organization-units/${id}`, input),
+  deactivateUnit: (id: string) => apiPost<Unit>(`/api/v1/organization-units/${id}/deactivate`),
 
   listPositions: (unitId: string) =>
     apiGet<Position[]>(`/api/v1/organization-positions?organization_unit_id=${unitId}`),

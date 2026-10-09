@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
+import { useClientPage } from '@/composables/useClientPage'
 import { financeApi } from '../api'
 import { ACCOUNT_TYPES, accountTypeLabel, type Account } from '../types'
 
 const accounts = ref<Account[]>([])
+const { paged: pagedAccounts, meta: accountsMeta, setPage: setAccountsPage, reset: resetAccountsPage } = useClientPage(accounts)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const showForm = ref(false)
@@ -16,6 +19,7 @@ async function load() {
   error.value = null
   try {
     accounts.value = await financeApi.listAccounts()
+    resetAccountsPage()
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat akun'
   } finally {
@@ -80,7 +84,7 @@ async function submit() {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="a in accounts" :key="a.id" class="border-b border-slate-100">
+          <tr v-for="a in pagedAccounts" :key="a.id" class="border-b border-slate-100">
             <td class="py-2 pr-4 font-mono text-xs text-slate-500">{{ a.code }}</td>
             <td class="py-2 pr-4 text-slate-900">{{ a.name }}</td>
             <td class="py-2 text-slate-600">{{ accountTypeLabel(a.account_type) }}</td>
@@ -88,5 +92,7 @@ async function submit() {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="accountsMeta" @change="setAccountsPage" />
   </section>
 </template>

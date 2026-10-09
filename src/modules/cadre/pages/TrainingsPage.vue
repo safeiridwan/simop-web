@@ -1,23 +1,27 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
 import { cadreApi } from '../api'
-import type { Training } from '../types'
+import type { PageMeta, Training } from '../types'
 
 const trainings = ref<Training[]>([])
+const meta = ref<PageMeta | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 
 const showForm = ref(false)
 const submitting = ref(false)
+const page = ref(1)
 const form = reactive({ name: '', description: '' })
 
 async function load() {
   loading.value = true
   error.value = null
   try {
-    const { data } = await cadreApi.listTrainings()
+    const { data, meta: pageMeta } = await cadreApi.listTrainings({ page: page.value })
     trainings.value = data
+    meta.value = pageMeta ?? null
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat pelatihan'
   } finally {
@@ -26,6 +30,11 @@ async function load() {
 }
 
 onMounted(load)
+
+function onPageChange(target: number) {
+  page.value = target
+  void load()
+}
 
 async function submit() {
   submitting.value = true
@@ -49,7 +58,7 @@ async function submit() {
     <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 class="text-xl font-semibold text-slate-900">Pelatihan Kader</h1>
-        <p class="text-sm text-slate-500">{{ trainings.length }} pelatihan</p>
+        <p class="text-sm text-slate-500">{{ meta?.total ?? trainings.length }} pelatihan</p>
       </div>
       <button
         type="button"
@@ -98,5 +107,7 @@ async function submit() {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>

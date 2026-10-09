@@ -48,6 +48,8 @@ export interface Journal {
   fund_id: string | null
   status: string
   posted_at: string | null
+  total_debit: number
+  total_credit: number
   created_at: string
 }
 
@@ -75,6 +77,7 @@ export interface Receipt {
   id: string
   journal_entry_id: string | null
   reimbursement_id: string | null
+  file_id: string | null
   receipt_number: string
   receipt_date: string | null
   verified_at: string | null
@@ -93,6 +96,24 @@ export const ACCOUNT_TYPES = [
   { value: 'EQUITY', label: 'Ekuitas' },
   { value: 'INCOME', label: 'Pendapatan' },
   { value: 'EXPENSE', label: 'Beban' },
+]
+
+export const FINANCE_REPORT_KEYS = [
+  { key: 'finance', label: 'Buku Jurnal' },
+  { key: 'profit-loss', label: 'Laba Rugi' },
+  { key: 'balance-sheet', label: 'Neraca' },
+  { key: 'cash-flow', label: 'Arus Kas' },
+]
+
+/** Finance reports that accept a from/to date range. */
+export const DATED_REPORT_KEYS = new Set(['profit-loss', 'balance-sheet', 'cash-flow'])
+
+export const JOURNAL_STATUSES = [
+  { value: 'DRAFT', label: 'Draf' },
+  { value: 'SUBMITTED', label: 'Diajukan' },
+  { value: 'APPROVED', label: 'Disetujui' },
+  { value: 'POSTED', label: 'Diposting' },
+  { value: 'VOID', label: 'Dibatalkan' },
 ]
 
 export const BUDGET_TRANSITIONS: Record<string, { action: string; label: string }[]> = {

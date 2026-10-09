@@ -1,20 +1,24 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
 import { activitiesApi } from '../api'
-import type { Activity } from '../types'
+import type { Activity, PageMeta } from '../types'
 
 const activities = ref<Activity[]>([])
+const meta = ref<PageMeta | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const search = ref('')
+const page = ref(1)
 
 async function load() {
   loading.value = true
   error.value = null
   try {
-    const { data } = await activitiesApi.list({ search: search.value })
+    const { data, meta: pageMeta } = await activitiesApi.list({ search: search.value, page: page.value })
     activities.value = data
+    meta.value = pageMeta ?? null
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat kegiatan'
   } finally {
@@ -23,18 +27,28 @@ async function load() {
 }
 
 onMounted(load)
+
+function onFilter() {
+  page.value = 1
+  void load()
+}
+
+function onPageChange(target: number) {
+  page.value = target
+  void load()
+}
 </script>
 
 <template>
   <section>
     <header class="mb-6">
       <h1 class="text-xl font-semibold text-slate-900">Kegiatan</h1>
-      <p class="text-sm text-slate-500">{{ activities.length }} kegiatan</p>
+      <p class="text-sm text-slate-500">{{ meta?.total ?? activities.length }} kegiatan</p>
     </header>
 
     <div class="mb-4 flex flex-wrap gap-2">
-      <input v-model="search" placeholder="Cari kegiatan" class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64" @keyup.enter="load" />
-      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="load">Cari</button>
+      <input v-model="search" placeholder="Cari kegiatan" class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64" @keyup.enter="onFilter" />
+      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="onFilter">Cari</button>
     </div>
 
     <p v-if="loading" class="text-sm text-slate-500">Memuat...</p>
@@ -66,5 +80,7 @@ onMounted(load)
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>

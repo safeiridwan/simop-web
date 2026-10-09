@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
+import { useClientPage } from '@/composables/useClientPage'
 import { usePermissions } from '../composables/usePermissions'
 
 const { permissions, loading, error, load } = usePermissions()
+const { paged: pagedPermissions, meta: permissionsMeta, setPage: setPermissionsPage } = useClientPage(permissions)
 
 onMounted(() => void load())
 </script>
@@ -17,10 +20,12 @@ onMounted(() => void load())
     <p v-else-if="permissions.length === 0" class="text-sm text-slate-500">Belum ada izin.</p>
 
     <ul v-else class="divide-y divide-slate-100 text-sm">
-      <li v-for="permission in permissions" :key="permission.id" class="flex flex-col py-2 sm:flex-row">
+      <li v-for="permission in pagedPermissions" :key="permission.id" class="flex flex-col py-2 sm:flex-row">
         <span class="font-mono text-xs text-slate-900 sm:w-56">{{ permission.code }}</span>
         <span class="text-slate-600">{{ permission.description ?? '—' }}</span>
       </li>
     </ul>
+
+    <Pagination :meta="permissionsMeta" @change="setPermissionsPage" />
   </section>
 </template>

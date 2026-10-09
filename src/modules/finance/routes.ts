@@ -20,9 +20,9 @@ export const financeRoutes: RouteRecordRaw[] = [
     meta: read,
   },
   {
-    path: 'finance/receipts',
-    name: 'finance-receipts',
-    component: () => import('./pages/ReceiptsPage.vue'),
-    meta: read,
+    path: 'finance/reports',
+    name: 'finance-reports',
+    component: () => import('./pages/FinanceReportsPage.vue'),
+    meta: { requiresAuth: true, permission: 'reports:read' },
   },
 ]

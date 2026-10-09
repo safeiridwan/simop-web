@@ -1,20 +1,23 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
 import { useAuthStore } from '@/app/stores/auth'
 import { downloadFile } from '@/services/http'
 import { electionReadinessApi } from '../api'
-import { ISSUE_STATUSES, checkLabel, type ReadinessCheck, type ReadinessSummary } from '../types'
+import { ISSUE_STATUSES, checkLabel, type PageMeta, type ReadinessCheck, type ReadinessSummary } from '../types'
 
 const auth = useAuthStore()
 const summary = ref<ReadinessSummary | null>(null)
 const checks = ref<ReadinessCheck[]>([])
+const meta = ref<PageMeta | null>(null)
 const loading = ref(true)
 const scanning = ref(false)
 const saving = ref(false)
 const error = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const statusFilter = ref('OPEN')
+const page = ref(1)
 
 const canResolve = computed(() => auth.can('election-readiness:resolve'))
 
@@ -31,10 +34,11 @@ async function load() {
   try {
     const [sum, list] = await Promise.all([
       electionReadinessApi.summary(),
-      electionReadinessApi.checks({ status: statusFilter.value }),
+      electionReadinessApi.checks({ status: statusFilter.value, page: page.value }),
     ])
     summary.value = sum
     checks.value = list.data
+    meta.value = list.meta ?? null
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat kesiapan'
   } finally {
@@ -43,6 +47,16 @@ async function load() {
 }
 
 onMounted(load)
+
+function onFilter() {
+  page.value = 1
+  void load()
+}
+
+function onPageChange(target: number) {
+  page.value = target
+  void load()
+}
 
 async function runScan() {
   scanning.value = true
@@ -136,10 +150,10 @@ async function onExport() {
     </template>
 
     <div class="mb-4 flex flex-wrap gap-2">
-      <select v-model="statusFilter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="load">
+      <select v-model="statusFilter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="onFilter">
         <option v-for="s in ISSUE_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
       </select>
-      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="load">Muat ulang</button>
+      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="onFilter">Muat ulang</button>
     </div>
 
     <p v-if="!loading && checks.length === 0" class="text-sm text-slate-500">Tidak ada temuan pada filter ini.</p>
@@ -188,5 +202,7 @@ async function onExport() {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>

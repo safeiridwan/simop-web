@@ -2,8 +2,8 @@ import { apiGet, apiGetPage, apiPatch, apiPost } from '@/services/http'
 import type { ActionItem, Meeting, MeetingDetail, PageMeta, Task } from './types'
 
 export const meetingsApi = {
-  list: (query: { search?: string; status?: string } = {}) => {
-    const params = new URLSearchParams({ page: '1', page_size: '50' })
+  list: (query: { search?: string; status?: string; page?: number; pageSize?: number } = {}) => {
+    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 20) })
     if (query.search) params.set('search', query.search)
     if (query.status) params.set('status', query.status)
     return apiGetPage<Meeting[], PageMeta>(`/api/v1/meetings?${params.toString()}`)
@@ -34,8 +34,8 @@ export const meetingsApi = {
 }
 
 export const tasksApi = {
-  list: (query: { search?: string; status?: string } = {}) => {
-    const params = new URLSearchParams({ page: '1', page_size: '50' })
+  list: (query: { search?: string; status?: string; page?: number; pageSize?: number } = {}) => {
+    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 20) })
     if (query.search) params.set('search', query.search)
     if (query.status) params.set('status', query.status)
     return apiGetPage<Task[], PageMeta>(`/api/v1/tasks?${params.toString()}`)

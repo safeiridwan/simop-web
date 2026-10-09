@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
 import { organizationApi } from '@/modules/organization/api'
 import type { Unit } from '@/modules/organization/types'
 import { assetsApi } from '../api'
-import { ASSET_CONDITIONS, ASSET_STATUSES, assetConditionLabel, assetStatusLabel, type Asset, type AssetCategory } from '../types'
+import { ASSET_CONDITIONS, ASSET_STATUSES, assetConditionLabel, assetStatusLabel, type Asset, type AssetCategory, type PageMeta } from '../types'
 
 const assets = ref<Asset[]>([])
+const meta = ref<PageMeta | null>(null)
 const categories = ref<AssetCategory[]>([])
 const units = ref<Unit[]>([])
 const loading = ref(true)
@@ -15,6 +17,7 @@ const showForm = ref(false)
 const submitting = ref(false)
 const search = ref('')
 const statusFilter = ref('')
+const page = ref(1)
 
 const form = reactive({ name: '', category_id: '', organization_unit_id: '', acquisition_date: '', acquisition_value: '', condition: 'GOOD' })
 
@@ -23,11 +26,12 @@ async function load() {
   error.value = null
   try {
     const [list, cats, unitList] = await Promise.all([
-      assetsApi.list({ search: search.value, status: statusFilter.value }),
+      assetsApi.list({ search: search.value, status: statusFilter.value, page: page.value }),
       assetsApi.categories(),
       organizationApi.listUnits({ pageSize: 200 }),
     ])
     assets.value = list.data
+    meta.value = list.meta ?? null
     categories.value = cats
     units.value = unitList.data
   } catch (err) {
@@ -38,6 +42,16 @@ async function load() {
 }
 
 onMounted(load)
+
+function onFilter() {
+  page.value = 1
+  void load()
+}
+
+function onPageChange(target: number) {
+  page.value = target
+  void load()
+}
 
 async function submit() {
   submitting.value = true
@@ -70,7 +84,7 @@ async function submit() {
     <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 class="text-xl font-semibold text-slate-900">Aset</h1>
-        <p class="text-sm text-slate-500">{{ assets.length }} aset</p>
+        <p class="text-sm text-slate-500">{{ meta?.total ?? assets.length }} aset</p>
       </div>
       <button type="button" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:w-fit" @click="showForm = !showForm">
         {{ showForm ? 'Batal' : 'Tambah Aset' }}
@@ -98,12 +112,12 @@ async function submit() {
     </form>
 
     <div class="mb-4 flex flex-wrap gap-2">
-      <input v-model="search" placeholder="Cari nama atau kode" class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64" @keyup.enter="load" />
-      <select v-model="statusFilter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="load">
+      <input v-model="search" placeholder="Cari nama atau kode" class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64" @keyup.enter="onFilter" />
+      <select v-model="statusFilter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="onFilter">
         <option value="">Semua status</option>
         <option v-for="s in ASSET_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
       </select>
-      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="load">Cari</button>
+      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="onFilter">Cari</button>
       <router-link to="/assets/categories" class="rounded border border-slate-300 px-3 py-2 text-sm">Kategori</router-link>
     </div>
 
@@ -135,5 +149,7 @@ async function submit() {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>

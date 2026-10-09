@@ -75,3 +75,9 @@ export interface DocumentInput {
   document_number?: string | null
   file_id?: string | null
 }
+
+export interface ImportResult {
+  created: number
+  skipped: number
+  errors: { row: number; message: string }[]
+}

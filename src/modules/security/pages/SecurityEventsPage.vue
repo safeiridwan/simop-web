@@ -1,20 +1,24 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
 import { securityApi } from '../api'
-import { EVENT_TYPES, eventTypeLabel, type SecurityEvent } from '../types'
+import { EVENT_TYPES, eventTypeLabel, type PageMeta, type SecurityEvent } from '../types'
 
 const events = ref<SecurityEvent[]>([])
+const meta = ref<PageMeta | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const filter = ref('')
+const page = ref(1)
 
 async function load() {
   loading.value = true
   error.value = null
   try {
-    const { data } = await securityApi.events(filter.value)
+    const { data, meta: pageMeta } = await securityApi.events(filter.value, page.value)
     events.value = data
+    meta.value = pageMeta ?? null
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat peristiwa keamanan'
   } finally {
@@ -23,6 +27,16 @@ async function load() {
 }
 
 onMounted(load)
+
+function onFilter() {
+  page.value = 1
+  void load()
+}
+
+function onPageChange(target: number) {
+  page.value = target
+  void load()
+}
 </script>
 
 <template>
@@ -33,10 +47,10 @@ onMounted(load)
     </header>
 
     <div class="mb-4 flex flex-wrap gap-2">
-      <select v-model="filter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="load">
+      <select v-model="filter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="onFilter">
         <option v-for="t in EVENT_TYPES" :key="t.value" :value="t.value">{{ t.label }}</option>
       </select>
-      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="load">Muat ulang</button>
+      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="onFilter">Muat ulang</button>
     </div>
 
     <p v-if="loading" class="text-sm text-slate-500">Memuat...</p>
@@ -70,5 +84,7 @@ onMounted(load)
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>

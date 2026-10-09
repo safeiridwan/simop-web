@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
+import { useClientPage } from '@/composables/useClientPage'
 import { useRoles } from '../composables/useRoles'
 
 const { roles, loading, error, load } = useRoles()
+const { paged: pagedRoles, meta: rolesMeta, setPage: setRolesPage } = useClientPage(roles)
 
 onMounted(() => void load())
 </script>
@@ -26,7 +29,7 @@ onMounted(() => void load())
           </tr>
         </thead>
         <tbody>
-          <tr v-for="role in roles" :key="role.id" class="border-b border-slate-100">
+          <tr v-for="role in pagedRoles" :key="role.id" class="border-b border-slate-100">
             <td class="py-2 pr-4 font-mono text-xs text-slate-900">{{ role.code }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ role.name }}</td>
             <td class="py-2 text-slate-600">{{ role.description ?? '—' }}</td>
@@ -34,5 +37,7 @@ onMounted(() => void load())
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="rolesMeta" @change="setRolesPage" />
   </section>
 </template>

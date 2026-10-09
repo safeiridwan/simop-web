@@ -1,14 +1,17 @@
-import { apiDelete, apiGet, apiGetPage, apiPatch, apiPost } from '@/services/http'
+import { apiDelete, apiGet, apiGetPage, apiPatch, apiPost, downloadFile, getAccessToken } from '@/services/http'
 import type {
   Address,
   AddressInput,
   DocumentInput,
+  ImportResult,
   PageMeta,
   Person,
   PersonDocument,
   PersonInput,
   Region,
 } from './types'
+
+const baseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
 
 export interface ListPeopleQuery {
   page?: number
@@ -34,6 +37,24 @@ export const peopleApi = {
   remove: (id: string) => apiDelete<{ status: string }>(`/api/v1/persons/${id}`),
   searchByNIK: (nik: string) =>
     apiGet<Person[]>(`/api/v1/persons/search?nik=${encodeURIComponent(nik)}`),
+  importTemplate: (format: 'csv' | 'xlsx') =>
+    downloadFile(`/api/v1/persons/import/template?format=${format}`, `template-orang.${format}`),
+  importPeople: async (file: File): Promise<ImportResult> => {
+    const form = new FormData()
+    form.append('file', file)
+    const headers: Record<string, string> = { Accept: 'application/json' }
+    const token = getAccessToken()
+    if (token) headers.Authorization = `Bearer ${token}`
+    const res = await fetch(`${baseUrl}/api/v1/persons/import`, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: form,
+    })
+    const body = (await res.json()) as { data: ImportResult; error?: { message?: string } }
+    if (!res.ok) throw new Error(body.error?.message ?? 'Impor gagal')
+    return body.data
+  },
   listAddresses: (id: string) => apiGet<Address[]>(`/api/v1/persons/${id}/addresses`),
   addAddress: (id: string, input: AddressInput) =>
     apiPost<Address>(`/api/v1/persons/${id}/addresses`, input),

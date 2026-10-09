@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
 import { organizationApi } from '@/modules/organization/api'
 import type { Unit } from '@/modules/organization/types'
 import { programsApi } from '../api'
-import { PROGRAM_STATUSES, programStatusLabel, type Program } from '../types'
+import { PROGRAM_STATUSES, programStatusLabel, type PageMeta, type Program } from '../types'
 
 const programs = ref<Program[]>([])
+const meta = ref<PageMeta | null>(null)
 const units = ref<Unit[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
@@ -15,6 +17,7 @@ const showForm = ref(false)
 const submitting = ref(false)
 const search = ref('')
 const statusFilter = ref('')
+const page = ref(1)
 
 const form = reactive({ organization_unit_id: '', name: '', objective: '', start_date: '', end_date: '' })
 
@@ -23,10 +26,11 @@ async function load() {
   error.value = null
   try {
     const [list, unitList] = await Promise.all([
-      programsApi.list({ search: search.value, status: statusFilter.value }),
+      programsApi.list({ search: search.value, status: statusFilter.value, page: page.value }),
       organizationApi.listUnits({ pageSize: 200 }),
     ])
     programs.value = list.data
+    meta.value = list.meta ?? null
     units.value = unitList.data
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat program'
@@ -36,6 +40,16 @@ async function load() {
 }
 
 onMounted(load)
+
+function onFilter() {
+  page.value = 1
+  void load()
+}
+
+function onPageChange(target: number) {
+  page.value = target
+  void load()
+}
 
 async function submit() {
   submitting.value = true
@@ -68,7 +82,7 @@ async function submit() {
     <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 class="text-xl font-semibold text-slate-900">Program</h1>
-        <p class="text-sm text-slate-500">{{ programs.length }} program</p>
+        <p class="text-sm text-slate-500">{{ meta?.total ?? programs.length }} program</p>
       </div>
       <button type="button" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:w-fit" @click="showForm = !showForm">
         {{ showForm ? 'Batal' : 'Tambah Program' }}
@@ -105,12 +119,12 @@ async function submit() {
     </div>
 
     <div class="mb-4 flex flex-wrap gap-2">
-      <input v-model="search" placeholder="Cari nama atau kode" class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64" @keyup.enter="load" />
-      <select v-model="statusFilter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="load">
+      <input v-model="search" placeholder="Cari nama atau kode" class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64" @keyup.enter="onFilter" />
+      <select v-model="statusFilter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="onFilter">
         <option value="">Semua status</option>
         <option v-for="s in PROGRAM_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
       </select>
-      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="load">Cari</button>
+      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="onFilter">Cari</button>
     </div>
 
     <p v-if="loading" class="text-sm text-slate-500">Memuat...</p>
@@ -139,5 +153,7 @@ async function submit() {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>

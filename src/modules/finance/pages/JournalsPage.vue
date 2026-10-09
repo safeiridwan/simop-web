@@ -1,20 +1,34 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
 import { useAuthStore } from '@/app/stores/auth'
+import { documentsApi } from '@/modules/documents/api'
 import { financeApi } from '../api'
 import { organizationApi } from '@/modules/organization/api'
 import type { Unit } from '@/modules/organization/types'
-import { JOURNAL_TRANSITIONS, type Account, type Journal } from '../types'
+import {
+  JOURNAL_STATUSES,
+  JOURNAL_TRANSITIONS,
+  type Account,
+  type Journal,
+  type PageMeta,
+} from '../types'
 
 const auth = useAuthStore()
 const journals = ref<Journal[]>([])
+const meta = ref<PageMeta | null>(null)
 const accounts = ref<Account[]>([])
 const units = ref<Unit[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 const saving = ref(false)
 const showForm = ref(false)
+
+const search = ref('')
+const statusFilter = ref('')
+const page = ref(1)
+const proofFile = ref<File | null>(null)
 
 const form = reactive({
   transaction_date: new Date().toISOString().slice(0, 10),
@@ -35,11 +49,12 @@ async function load() {
   error.value = null
   try {
     const [list, accountList, unitList] = await Promise.all([
-      financeApi.listJournals(),
+      financeApi.listJournals({ search: search.value, status: statusFilter.value, page: page.value }),
       financeApi.listAccounts(),
       organizationApi.listUnits({ pageSize: 200 }),
     ])
     journals.value = list.data
+    meta.value = list.meta ?? null
     accounts.value = accountList
     units.value = unitList.data
   } catch (err) {
@@ -50,6 +65,20 @@ async function load() {
 }
 
 onMounted(load)
+
+function onFilter() {
+  page.value = 1
+  void load()
+}
+
+function onPageChange(target: number) {
+  page.value = target
+  void load()
+}
+
+function onProofFile(event: Event) {
+  proofFile.value = (event.target as HTMLInputElement).files?.[0] ?? null
+}
 
 function addLine() {
   form.lines.push({ account_id: '', debit: 0, credit: 0 })
@@ -63,14 +92,21 @@ async function submit() {
   saving.value = true
   error.value = null
   try {
+    let fileId: string | undefined
+    if (proofFile.value) {
+      const uploaded = await documentsApi.upload(proofFile.value)
+      fileId = uploaded.id
+    }
     await financeApi.createJournal({
       transaction_date: form.transaction_date,
       organization_unit_id: form.organization_unit_id,
       description: form.description || undefined,
+      file_id: fileId,
       lines: form.lines.map((l) => ({ account_id: l.account_id, debit: Number(l.debit) || 0, credit: Number(l.credit) || 0 })),
     })
     showForm.value = false
     form.description = ''
+    proofFile.value = null
     form.lines = [
       { account_id: '', debit: 0, credit: 0 },
       { account_id: '', debit: 0, credit: 0 },
@@ -110,7 +146,7 @@ function transitionJournal(id: string, action: string) {
     <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 class="text-xl font-semibold text-slate-900">Jurnal</h1>
-        <p class="text-sm text-slate-500">{{ journals.length }} jurnal</p>
+        <p class="text-sm text-slate-500">{{ meta?.total ?? journals.length }} jurnal</p>
       </div>
       <button type="button" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:w-fit" @click="showForm = !showForm">
         {{ showForm ? 'Batal' : 'Tambah Jurnal' }}
@@ -124,7 +160,14 @@ function transitionJournal(id: string, action: string) {
           <option value="" disabled>Unit organisasi</option>
           <option v-for="u in units" :key="u.id" :value="u.id">{{ u.name }}</option>
         </select>
-        <input v-model="form.description" placeholder="Deskripsi" class="rounded border border-slate-300 px-3 py-2 text-sm" />
+        <input v-model="form.description" placeholder="Catatan" class="rounded border border-slate-300 px-3 py-2 text-sm" />
+      </div>
+
+      <div class="mt-3 grid gap-2 sm:grid-cols-2">
+        <label class="flex flex-col text-sm text-slate-600">
+          Bukti transaksi (jpg/png/pdf)
+          <input type="file" accept="image/jpeg,image/png,application/pdf" class="mt-1 text-sm" @change="onProofFile" />
+        </label>
       </div>
 
       <div class="mt-4 space-y-2">
@@ -149,17 +192,32 @@ function transitionJournal(id: string, action: string) {
       <p class="mt-2 text-xs text-slate-400">Jurnal hanya dapat diposting bila debit = kredit dan minimal dua baris.</p>
     </div>
 
+    <div class="mb-4 flex flex-wrap gap-2">
+      <input
+        v-model="search"
+        placeholder="Cari nomor atau catatan"
+        class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64"
+        @keyup.enter="onFilter"
+      />
+      <select v-model="statusFilter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="onFilter">
+        <option value="">Semua status</option>
+        <option v-for="s in JOURNAL_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
+      </select>
+      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="onFilter">Cari</button>
+    </div>
+
     <p v-if="loading" class="text-sm text-slate-500">Memuat...</p>
     <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
     <p v-else-if="journals.length === 0" class="text-sm text-slate-500">Belum ada jurnal.</p>
 
     <div v-else class="overflow-x-auto">
-      <table class="w-full min-w-[42rem] border-collapse text-sm">
+      <table class="w-full min-w-[48rem] border-collapse text-sm">
         <thead>
           <tr class="border-b border-slate-200 text-left text-slate-500">
             <th class="py-2 pr-4">Nomor</th>
             <th class="py-2 pr-4">Tanggal</th>
-            <th class="py-2 pr-4">Deskripsi</th>
+            <th class="py-2 pr-4">Catatan</th>
+            <th class="py-2 pr-4 text-right">Jumlah</th>
             <th class="py-2 pr-4">Status</th>
             <th class="py-2"></th>
           </tr>
@@ -171,6 +229,7 @@ function transitionJournal(id: string, action: string) {
             </td>
             <td class="py-2 pr-4 text-slate-600">{{ j.transaction_date || '—' }}</td>
             <td class="py-2 pr-4 text-slate-900">{{ j.description || '—' }}</td>
+            <td class="py-2 pr-4 text-right text-slate-700">{{ j.total_debit.toLocaleString('id-ID') }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ j.status }}</td>
             <td class="py-2">
               <button
@@ -188,5 +247,7 @@ function transitionJournal(id: string, action: string) {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>

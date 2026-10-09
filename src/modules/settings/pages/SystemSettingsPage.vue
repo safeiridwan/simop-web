@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
+import { useClientPage } from '@/composables/useClientPage'
 import { useAuthStore } from '@/app/stores/auth'
 import { settingsApi } from '../api'
 import type { Setting } from '../types'
 
 const auth = useAuthStore()
 const settings = ref<Setting[]>([])
+const { paged: pagedSettings, meta: settingsMeta, setPage: setSettingsPage } = useClientPage(settings)
 const loading = ref(true)
 const saving = ref(false)
 const error = ref<string | null>(null)
@@ -71,7 +74,7 @@ function canUpdate(): boolean {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="s in settings" :key="s.key" class="border-b border-slate-100">
+          <tr v-for="s in pagedSettings" :key="s.key" class="border-b border-slate-100">
             <td class="p-3 font-mono text-xs text-slate-700">{{ s.key }}</td>
             <td class="p-3">
               <input
@@ -95,5 +98,7 @@ function canUpdate(): boolean {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="settingsMeta" @change="setSettingsPage" />
   </section>
 </template>

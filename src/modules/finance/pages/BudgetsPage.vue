@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
+import Pagination from '@/components/Pagination.vue'
 import { useAuthStore } from '@/app/stores/auth'
 import { financeApi } from '../api'
 import { organizationApi } from '@/modules/organization/api'
 import type { Unit } from '@/modules/organization/types'
-import { BUDGET_TRANSITIONS, type Account, type Budget } from '../types'
+import { BUDGET_TRANSITIONS, type Account, type Budget, type PageMeta } from '../types'
 
 const auth = useAuthStore()
 const budgets = ref<Budget[]>([])
+const meta = ref<PageMeta | null>(null)
 const accounts = ref<Account[]>([])
 const units = ref<Unit[]>([])
 const accountNames = ref<Record<string, string>>({})
@@ -16,6 +18,7 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const saving = ref(false)
 const showForm = ref(false)
+const page = ref(1)
 const form = reactive({ organization_unit_id: '', account_id: '', fiscal_year: new Date().getFullYear(), budget_amount: '' })
 
 async function load() {
@@ -23,11 +26,12 @@ async function load() {
   error.value = null
   try {
     const [list, accountList, unitList] = await Promise.all([
-      financeApi.listBudgets(),
+      financeApi.listBudgets({ page: page.value }),
       financeApi.listAccounts(),
       organizationApi.listUnits({ pageSize: 200 }),
     ])
     budgets.value = list.data
+    meta.value = list.meta ?? null
     accounts.value = accountList
     units.value = unitList.data
     accountNames.value = Object.fromEntries(accountList.map((a) => [a.id, `${a.code} ${a.name}`]))
@@ -39,6 +43,11 @@ async function load() {
 }
 
 onMounted(load)
+
+function onPageChange(target: number) {
+  page.value = target
+  void load()
+}
 
 async function run(fn: () => Promise<unknown>) {
   saving.value = true
@@ -82,7 +91,7 @@ function transitionBudget(id: string, action: string) {
     <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 class="text-xl font-semibold text-slate-900">Anggaran</h1>
-        <p class="text-sm text-slate-500">{{ budgets.length }} baris</p>
+        <p class="text-sm text-slate-500">{{ meta?.total ?? budgets.length }} baris</p>
       </div>
       <button type="button" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:w-fit" @click="showForm = !showForm">
         {{ showForm ? 'Batal' : 'Tambah Anggaran' }}
@@ -142,5 +151,7 @@ function transitionBudget(id: string, action: string) {
         </tbody>
       </table>
     </div>
+
+    <Pagination :meta="meta" @change="onPageChange" />
   </section>
 </template>
