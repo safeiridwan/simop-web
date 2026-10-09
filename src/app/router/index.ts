@@ -14,12 +14,14 @@ import { governanceRoutes } from '@/modules/governance/routes'
 import { healthRoutes } from '@/modules/health/routes'
 import { memberRoutes } from '@/modules/members/routes'
 import { nonPartyRoutes } from '@/modules/non-party/routes'
+import { notificationRoutes } from '@/modules/notifications/routes'
 import { organizationRoutes } from '@/modules/organization/routes'
 import { peopleRoutes } from '@/modules/people/routes'
 import { permissionRoutes } from '@/modules/permissions/routes'
 import { programRoutes } from '@/modules/programs/routes'
 import { reportRoutes } from '@/modules/reports/routes'
 import { roleRoutes } from '@/modules/roles/routes'
+import { securityRoutes } from '@/modules/security/routes'
 import { userRoutes } from '@/modules/users/routes'
 
 export const router = createRouter({
@@ -47,6 +49,8 @@ export const router = createRouter({
         ...reportRoutes,
         ...dataQualityRoutes,
         ...electionReadinessRoutes,
+        ...notificationRoutes,
+        ...securityRoutes,
         ...userRoutes,
         ...roleRoutes,
         ...permissionRoutes,

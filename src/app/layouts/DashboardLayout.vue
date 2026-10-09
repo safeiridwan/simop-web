@@ -37,6 +37,8 @@ const nav: NavItem[] = [
   { label: 'Laporan', to: '/reports', permission: 'reports:read' },
   { label: 'Kualitas Data', to: '/data-quality', permission: 'data-quality:read' },
   { label: 'Kesiapan Data', to: '/election-readiness', permission: 'election-readiness:read' },
+  { label: 'Notifikasi', to: '/notifications' },
+  { label: 'Keamanan', to: '/security/events', permission: 'security:read' },
   { label: 'Pengguna', to: '/settings/users', permission: 'users:read' },
   { label: 'Peran', to: '/settings/roles', permission: 'roles:read' },
   { label: 'Izin', to: '/settings/permissions', permission: 'permissions:read' },

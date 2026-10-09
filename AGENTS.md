@@ -87,6 +87,10 @@ src/
   per-rule summary, a scan action and resolve/ignore actions.
 - `election-readiness` (Phase 14): `/election-readiness` shows the readiness
   overview, per-check breakdown, scan, resolve/ignore and CSV export.
+- `notifications` (Phase 15): `/notifications` inbox with mark-read actions and
+  `/notification-preferences` channel matrix.
+- `security` (Phase 16): `/security/events` lists authentication/abuse signals
+  (gated on `security:read`).
 
 ## Responsive UI
 
