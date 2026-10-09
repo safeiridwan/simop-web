@@ -12,5 +12,7 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     globals: true,
+    // Playwright specs under e2e/ are run by `playwright test`, not vitest.
+    exclude: ['node_modules/**', 'dist/**', 'e2e/**'],
   },
 })

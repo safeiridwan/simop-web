@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: help install dev build preview test type-check lint check
+.PHONY: help install dev build preview test test-e2e type-check lint check
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -20,6 +20,9 @@ preview: ## Preview the production build
 
 test: ## Run unit tests
 	pnpm test
+
+test-e2e: ## Run E2E tests (Playwright; install browsers first: pnpm exec playwright install chromium)
+	pnpm test:e2e
 
 type-check: ## Type-check without emitting
 	pnpm type-check
