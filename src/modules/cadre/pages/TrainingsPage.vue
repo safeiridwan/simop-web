@@ -13,13 +13,14 @@ const error = ref<string | null>(null)
 const showForm = ref(false)
 const submitting = ref(false)
 const page = ref(1)
+const pageSize = ref(10)
 const form = reactive({ name: '', description: '' })
 
 async function load() {
   loading.value = true
   error.value = null
   try {
-    const { data, meta: pageMeta } = await cadreApi.listTrainings({ page: page.value })
+    const { data, meta: pageMeta } = await cadreApi.listTrainings({ page: page.value, pageSize: pageSize.value })
     trainings.value = data
     meta.value = pageMeta ?? null
   } catch (err) {
@@ -33,6 +34,12 @@ onMounted(load)
 
 function onPageChange(target: number) {
   page.value = target
+  void load()
+}
+
+function onPageSizeChange(size: number) {
+  pageSize.value = size
+  page.value = 1
   void load()
 }
 
@@ -108,6 +115,6 @@ async function submit() {
       </table>
     </div>
 
-    <Pagination :meta="meta" @change="onPageChange" />
+    <Pagination :meta="meta" @change="onPageChange" @page-size-change="onPageSizeChange" />
   </section>
 </template>

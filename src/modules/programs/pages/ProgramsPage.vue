@@ -18,6 +18,7 @@ const submitting = ref(false)
 const search = ref('')
 const statusFilter = ref('')
 const page = ref(1)
+const pageSize = ref(10)
 
 const form = reactive({ organization_unit_id: '', name: '', objective: '', start_date: '', end_date: '' })
 
@@ -26,7 +27,7 @@ async function load() {
   error.value = null
   try {
     const [list, unitList] = await Promise.all([
-      programsApi.list({ search: search.value, status: statusFilter.value, page: page.value }),
+      programsApi.list({ search: search.value, status: statusFilter.value, page: page.value, pageSize: pageSize.value }),
       organizationApi.listUnits({ pageSize: 200 }),
     ])
     programs.value = list.data
@@ -48,6 +49,12 @@ function onFilter() {
 
 function onPageChange(target: number) {
   page.value = target
+  void load()
+}
+
+function onPageSizeChange(size: number) {
+  pageSize.value = size
+  page.value = 1
   void load()
 }
 
@@ -154,6 +161,6 @@ async function submit() {
       </table>
     </div>
 
-    <Pagination :meta="meta" @change="onPageChange" />
+    <Pagination :meta="meta" @change="onPageChange" @page-size-change="onPageSizeChange" />
   </section>
 </template>

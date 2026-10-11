@@ -21,6 +21,7 @@ const showForm = ref(false)
 const openRow = ref<string | null>(null)
 const receipts = ref<Receipt[]>([])
 const page = ref(1)
+const pageSize = ref(10)
 const receiptForm = reactive({ receipt_number: '', receipt_date: '' })
 
 const selectedPerson = ref<Person | null>(null)
@@ -31,7 +32,7 @@ async function load() {
   error.value = null
   try {
     const [list, unitList] = await Promise.all([
-      financeApi.listReimbursements({ page: page.value }),
+      financeApi.listReimbursements({ page: page.value, pageSize: pageSize.value }),
       organizationApi.listUnits({ pageSize: 200 }),
     ])
     reimbursements.value = list.data
@@ -48,6 +49,12 @@ onMounted(load)
 
 function onPageChange(target: number) {
   page.value = target
+  void load()
+}
+
+function onPageSizeChange(size: number) {
+  pageSize.value = size
+  page.value = 1
   void load()
 }
 
@@ -195,6 +202,6 @@ function transitionReimbursement(id: string, action: string) {
       </div>
     </div>
 
-    <Pagination :meta="meta" @change="onPageChange" />
+    <Pagination :meta="meta" @change="onPageChange" @page-size-change="onPageSizeChange" />
   </section>
 </template>

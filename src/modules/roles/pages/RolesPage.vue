@@ -6,7 +6,7 @@ import { useClientPage } from '@/composables/useClientPage'
 import { useRoles } from '../composables/useRoles'
 
 const { roles, loading, error, load } = useRoles()
-const { paged: pagedRoles, meta: rolesMeta, setPage: setRolesPage } = useClientPage(roles)
+const { paged: pagedRoles, meta: rolesMeta, setPage: setRolesPage, setPageSize: setRolesPageSize } = useClientPage(roles)
 
 onMounted(() => void load())
 </script>
@@ -38,6 +38,6 @@ onMounted(() => void load())
       </table>
     </div>
 
-    <Pagination :meta="rolesMeta" @change="setRolesPage" />
+    <Pagination :meta="rolesMeta" @change="setRolesPage" @page-size-change="setRolesPageSize" />
   </section>
 </template>

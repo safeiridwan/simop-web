@@ -1,10 +1,11 @@
-import { apiGet, apiGetPage, apiPatch, apiPost } from '@/services/http'
+import { apiDelete, apiGet, apiGetPage, apiPatch, apiPost, apiUpload, downloadFile } from '@/services/http'
 import type {
   Batch,
   BatchDetail,
   CadreHistoryEntry,
   CadreLevel,
   CadreProfile,
+  ImportResult,
   PageMeta,
   Participant,
   Session,
@@ -26,7 +27,7 @@ export const cadreApi = {
   list: (query: ListCadresQuery = {}) => {
     const params = new URLSearchParams()
     params.set('page', String(query.page ?? 1))
-    params.set('page_size', String(query.pageSize ?? 50))
+    params.set('page_size', String(query.pageSize ?? 10))
     if (query.search) params.set('search', query.search)
     if (query.levelId) params.set('level_id', query.levelId)
     if (query.status) params.set('status', query.status)
@@ -35,7 +36,18 @@ export const cadreApi = {
   get: (id: string) => apiGet<CadreProfile>(`/api/v1/cadres/${id}`),
   create: (input: { person_id: string; level_id: string; started_at?: string; notes?: string }) =>
     apiPost<CadreProfile>('/api/v1/cadres', input),
+  importTemplate: (format: 'csv' | 'xlsx') =>
+    downloadFile(`/api/v1/cadres/import/template?format=${format}`, `template-kader.${format}`),
+  import: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return apiUpload<ImportResult>('/api/v1/cadres/import', form)
+  },
   history: (id: string) => apiGet<CadreHistoryEntry[]>(`/api/v1/cadres/${id}/history`),
+  updateHistory: (id: string, historyId: string, input: { from_level_id?: string | null; to_level_id: string; effective_date?: string; notes?: string }) =>
+    apiPatch<CadreHistoryEntry>(`/api/v1/cadres/${id}/history/${historyId}`, input),
+  deleteHistory: (id: string, historyId: string) =>
+    apiDelete<{ status: string }>(`/api/v1/cadres/${id}/history/${historyId}`),
   promote: (id: string, input: { to_level_id: string; effective_date?: string; notes?: string }) =>
     apiPost<CadreProfile>(`/api/v1/cadres/${id}/promotions`, input),
   updateStatus: (id: string, status: string, notes?: string) =>
@@ -43,7 +55,7 @@ export const cadreApi = {
 
   listTrainings: (query: { page?: number; pageSize?: number } = {}) =>
     apiGetPage<Training[], PageMeta>(
-      `/api/v1/cadre-trainings?page=${query.page ?? 1}&page_size=${query.pageSize ?? 20}`,
+      `/api/v1/cadre-trainings?page=${query.page ?? 1}&page_size=${query.pageSize ?? 10}`,
     ),
   createTraining: (input: { name: string; description?: string; status?: string }) =>
     apiPost<Training>('/api/v1/cadre-trainings', input),

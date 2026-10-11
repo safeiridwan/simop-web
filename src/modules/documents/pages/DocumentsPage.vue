@@ -23,13 +23,14 @@ const form = reactive({ organization_unit_id: '', document_type: '', document_nu
 const search = ref('')
 const typeFilter = ref(typeof route.query.type === 'string' ? route.query.type : '')
 const page = ref(1)
+const pageSize = ref(10)
 
 async function load() {
   loading.value = true
   error.value = null
   try {
     const [list, unitList] = await Promise.all([
-      documentsApi.list({ search: search.value, documentType: typeFilter.value, page: page.value }),
+      documentsApi.list({ search: search.value, documentType: typeFilter.value, page: page.value, pageSize: pageSize.value }),
       organizationApi.listUnits({ pageSize: 200 }),
     ])
     documents.value = list.data
@@ -51,6 +52,12 @@ function onFilter() {
 
 function onPageChange(target: number) {
   page.value = target
+  void load()
+}
+
+function onPageSizeChange(size: number) {
+  pageSize.value = size
+  page.value = 1
   void load()
 }
 
@@ -146,6 +153,6 @@ async function submit() {
       </table>
     </div>
 
-    <Pagination :meta="meta" @change="onPageChange" />
+    <Pagination :meta="meta" @change="onPageChange" @page-size-change="onPageSizeChange" />
   </section>
 </template>

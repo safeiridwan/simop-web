@@ -7,13 +7,14 @@ import type { Person } from '@/modules/people/types'
 import { downloadFile } from '@/services/http'
 import { membersApi } from '../api'
 import { useMembers } from '../composables/useMembers'
-import { MEMBER_STATUSES, memberStatusLabel, type CreateMemberInput } from '../types'
+import { MEMBER_STATUSES, memberStatusLabel, type CreateMemberInput, type ImportResult } from '../types'
 
 const { members, meta, loading, error, load } = useMembers()
 
 const search = ref('')
 const status = ref('')
 const page = ref(1)
+const pageSize = ref(10)
 const showForm = ref(false)
 const submitting = ref(false)
 const formError = ref<string | null>(null)
@@ -22,16 +23,60 @@ const selectedPerson = ref<Person | null>(null)
 const joinDate = ref('')
 const source = ref('')
 
+const showImport = ref(false)
+const importing = ref(false)
+const importError = ref<string | null>(null)
+const importResult = ref<ImportResult | null>(null)
+const importFile = ref<File | null>(null)
+
 onMounted(() => void load())
+
+function onImportFile(event: Event) {
+  const input = event.target as HTMLInputElement
+  importFile.value = input.files?.[0] ?? null
+}
+
+async function onImport() {
+  if (!importFile.value) {
+    importError.value = 'Pilih berkas terlebih dahulu.'
+    return
+  }
+  importing.value = true
+  importError.value = null
+  importResult.value = null
+  try {
+    importResult.value = await membersApi.import(importFile.value)
+    importFile.value = null
+    await load(search.value, status.value, page.value, pageSize.value)
+  } catch (err) {
+    importError.value = err instanceof Error ? err.message : 'Gagal mengimpor'
+  } finally {
+    importing.value = false
+  }
+}
+
+async function downloadImportTemplate(format: 'csv' | 'xlsx') {
+  try {
+    await membersApi.importTemplate(format)
+  } catch (err) {
+    importError.value = err instanceof Error ? err.message : 'Gagal mengunduh template'
+  }
+}
 
 function onFilter() {
   page.value = 1
-  void load(search.value, status.value, page.value)
+  void load(search.value, status.value, page.value, pageSize.value)
 }
 
 function onPageChange(target: number) {
   page.value = target
-  void load(search.value, status.value, page.value)
+  void load(search.value, status.value, page.value, pageSize.value)
+}
+
+function onPageSizeChange(size: number) {
+  pageSize.value = size
+  page.value = 1
+  void load(search.value, status.value, page.value, pageSize.value)
 }
 
 async function onExport() {
@@ -58,7 +103,7 @@ async function submit() {
     selectedPerson.value = null
     joinDate.value = ''
     source.value = ''
-    await load(search.value, status.value, page.value)
+    await load(search.value, status.value, page.value, pageSize.value)
   } catch (err) {
     formError.value = err instanceof Error ? err.message : 'Gagal menambah anggota'
   } finally {
@@ -84,6 +129,13 @@ async function submit() {
         </button>
         <button
           type="button"
+          class="rounded border border-slate-300 px-3 py-2 text-sm"
+          @click="showImport = !showImport"
+        >
+          {{ showImport ? 'Batal' : 'Impor' }}
+        </button>
+        <button
+          type="button"
           class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
           @click="showForm = !showForm"
         >
@@ -91,6 +143,34 @@ async function submit() {
         </button>
       </div>
     </header>
+
+    <div v-if="showImport" class="mb-6 space-y-3 rounded-lg border border-slate-200 bg-white p-4">
+      <p class="text-sm text-slate-600">
+        Unggah berkas CSV atau XLSX. Orang pada tiap baris dicocokkan lewat NIK; bila belum ada, orang baru dibuat otomatis.
+        Baris yang gagal atau duplikat dilewati dan dilaporkan.
+      </p>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-sm text-slate-500">Template:</span>
+        <button type="button" class="text-sm text-brand-600 hover:underline" @click="downloadImportTemplate('csv')">CSV</button>
+        <button type="button" class="text-sm text-brand-600 hover:underline" @click="downloadImportTemplate('xlsx')">XLSX</button>
+      </div>
+      <input type="file" accept=".csv,.xlsx" class="w-full text-sm" @change="onImportFile" />
+      <p v-if="importError" class="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{{ importError }}</p>
+      <button
+        type="button"
+        :disabled="importing"
+        class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+        @click="onImport"
+      >
+        {{ importing ? 'Mengimpor...' : 'Impor Sekarang' }}
+      </button>
+      <div v-if="importResult" class="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
+        <p class="text-slate-700">Selesai: {{ importResult.created }} dibuat, {{ importResult.skipped }} dilewati.</p>
+        <ul v-if="importResult.errors.length" class="mt-2 space-y-1 text-xs text-red-600">
+          <li v-for="e in importResult.errors" :key="e.row">Baris {{ e.row }}: {{ e.message }}</li>
+        </ul>
+      </div>
+    </div>
 
     <form v-if="showForm" class="mb-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-2" @submit.prevent="submit">
       <div class="sm:col-span-2">
@@ -158,6 +238,6 @@ async function submit() {
       </table>
     </div>
 
-    <Pagination :meta="meta" @change="onPageChange" />
+    <Pagination :meta="meta" @change="onPageChange" @page-size-change="onPageSizeChange" />
   </section>
 </template>

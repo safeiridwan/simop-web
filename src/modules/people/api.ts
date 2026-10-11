@@ -8,6 +8,7 @@ import type {
   Person,
   PersonDocument,
   PersonInput,
+  PersonSecrets,
   Region,
 } from './types'
 
@@ -25,13 +26,14 @@ export const peopleApi = {
   list: (query: ListPeopleQuery = {}) => {
     const params = new URLSearchParams()
     params.set('page', String(query.page ?? 1))
-    params.set('page_size', String(query.pageSize ?? 20))
+    params.set('page_size', String(query.pageSize ?? 10))
     if (query.search) params.set('search', query.search)
     if (query.status) params.set('status', query.status)
     if (query.gender) params.set('gender', query.gender)
     return apiGetPage<Person[], PageMeta>(`/api/v1/persons?${params.toString()}`)
   },
   get: (id: string) => apiGet<Person>(`/api/v1/persons/${id}`),
+  reveal: (id: string) => apiGet<PersonSecrets>(`/api/v1/persons/${id}/reveal`),
   create: (input: PersonInput) => apiPost<Person>('/api/v1/persons', input),
   update: (id: string, input: Partial<PersonInput>) => apiPatch<Person>(`/api/v1/persons/${id}`, input),
   remove: (id: string) => apiDelete<{ status: string }>(`/api/v1/persons/${id}`),

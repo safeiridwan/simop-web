@@ -33,6 +33,7 @@ const showForm = ref(false)
 const search = ref('')
 const statusFilter = ref('')
 const page = ref(1)
+const pageSize = ref(10)
 const proofFile = ref<File | null>(null)
 
 const form = reactive({
@@ -64,7 +65,7 @@ async function load() {
   error.value = null
   try {
     const [list, accountList, unitList, fundList, programList] = await Promise.all([
-      financeApi.listJournals({ search: search.value, status: statusFilter.value, page: page.value }),
+      financeApi.listJournals({ search: search.value, status: statusFilter.value, page: page.value, pageSize: pageSize.value }),
       financeApi.listAccounts(),
       organizationApi.listUnits({ pageSize: 200 }),
       financeApi.listFunds(),
@@ -96,6 +97,12 @@ function onFilter() {
 
 function onPageChange(target: number) {
   page.value = target
+  void load()
+}
+
+function onPageSizeChange(size: number) {
+  pageSize.value = size
+  page.value = 1
   void load()
 }
 
@@ -293,6 +300,6 @@ function transitionJournal(id: string, action: string) {
       </table>
     </div>
 
-    <Pagination :meta="meta" @change="onPageChange" />
+    <Pagination :meta="meta" @change="onPageChange" @page-size-change="onPageSizeChange" />
   </section>
 </template>

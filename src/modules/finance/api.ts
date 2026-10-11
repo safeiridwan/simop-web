@@ -26,7 +26,7 @@ export const financeApi = {
     apiPost<Fund>('/api/v1/finance/funds', input),
 
   listBudgets: (query: { fiscalYear?: number; status?: string; page?: number; pageSize?: number } = {}) => {
-    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 20) })
+    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 10) })
     if (query.fiscalYear) params.set('fiscal_year', String(query.fiscalYear))
     if (query.status) params.set('status', query.status)
     return apiGetPage<Budget[], PageMeta>(`/api/v1/finance/budgets?${params.toString()}`)
@@ -36,7 +36,7 @@ export const financeApi = {
   transitionBudget: (id: string, action: string) => apiPost<Budget>(`/api/v1/finance/budgets/${id}/${action}`),
 
   listJournals: (query: { status?: string; search?: string; page?: number; pageSize?: number } = {}) => {
-    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 20) })
+    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 10) })
     if (query.status) params.set('status', query.status)
     if (query.search) params.set('search', query.search)
     return apiGetPage<Journal[], PageMeta>(`/api/v1/finance/journals?${params.toString()}`)
@@ -54,7 +54,7 @@ export const financeApi = {
   transitionJournal: (id: string, action: string) => apiPost<Journal>(`/api/v1/finance/journals/${id}/${action}`),
 
   listReimbursements: (query: { status?: string; page?: number; pageSize?: number } = {}) => {
-    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 20) })
+    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 10) })
     if (query.status) params.set('status', query.status)
     return apiGetPage<Reimbursement[], PageMeta>(`/api/v1/finance/reimbursements?${params.toString()}`)
   },

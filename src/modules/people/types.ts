@@ -13,6 +13,11 @@ export interface Person {
   updated_at: string
 }
 
+export interface PersonSecrets {
+  nik: string
+  phone: string
+}
+
 export interface PersonInput {
   full_name: string
   nik?: string

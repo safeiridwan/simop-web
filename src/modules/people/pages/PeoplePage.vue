@@ -3,18 +3,71 @@ import { onMounted, ref } from 'vue'
 
 import Pagination from '@/components/Pagination.vue'
 import PersonForm from '../components/PersonForm.vue'
+import { useAuthStore } from '@/app/stores/auth'
 import { peopleApi } from '../api'
-import type { ImportResult, PersonInput } from '../types'
+import type { ImportResult, Person, PersonInput, PersonSecrets } from '../types'
 import { usePeople } from '../composables/usePeople'
 
+const auth = useAuthStore()
 const { people, meta, loading, error, load } = usePeople()
 
 const search = ref('')
 const status = ref('')
 const page = ref(1)
+const pageSize = ref(10)
 const showForm = ref(false)
 const submitting = ref(false)
 const formError = ref<string | null>(null)
+
+const secrets = ref<Record<string, PersonSecrets>>({})
+const showNik = ref<Record<string, boolean>>({})
+const showPhone = ref<Record<string, boolean>>({})
+
+async function ensureSecrets(id: string) {
+  if (secrets.value[id]) return
+  secrets.value[id] = await peopleApi.reveal(id)
+}
+
+async function toggleNik(person: Person) {
+  if (showNik.value[person.id]) {
+    showNik.value[person.id] = false
+    return
+  }
+  try {
+    await ensureSecrets(person.id)
+    showNik.value[person.id] = true
+  } catch (err) {
+    formError.value = err instanceof Error ? err.message : 'Gagal membuka NIK'
+  }
+}
+
+async function togglePhone(person: Person) {
+  if (showPhone.value[person.id]) {
+    showPhone.value[person.id] = false
+    return
+  }
+  try {
+    await ensureSecrets(person.id)
+    showPhone.value[person.id] = true
+  } catch (err) {
+    formError.value = err instanceof Error ? err.message : 'Gagal membuka telepon'
+  }
+}
+
+function nikDisplay(person: Person): string {
+  return showNik.value[person.id] ? secrets.value[person.id]?.nik || '—' : person.nik_masked || '—'
+}
+
+function phoneDisplay(person: Person): string {
+  return showPhone.value[person.id] ? secrets.value[person.id]?.phone || '—' : person.phone_masked || '—'
+}
+
+function reload() {
+  secrets.value = {}
+  showNik.value = {}
+  showPhone.value = {}
+  void load(search.value, status.value, page.value, pageSize.value)
+}
 
 const showImport = ref(false)
 const importing = ref(false)
@@ -40,7 +93,7 @@ async function onImport() {
   try {
     importResult.value = await peopleApi.importPeople(importFile.value)
     importFile.value = null
-    await load(search.value, status.value, page.value)
+    await load(search.value, status.value, page.value, pageSize.value)
   } catch (err) {
     importError.value = err instanceof Error ? err.message : 'Gagal mengimpor'
   } finally {
@@ -58,12 +111,18 @@ async function downloadTemplate(format: 'csv' | 'xlsx') {
 
 function onFilter() {
   page.value = 1
-  void load(search.value, status.value, page.value)
+  reload()
 }
 
 function onPageChange(target: number) {
   page.value = target
-  void load(search.value, status.value, page.value)
+  reload()
+}
+
+function onPageSizeChange(size: number) {
+  pageSize.value = size
+  page.value = 1
+  reload()
 }
 
 async function onCreate(input: PersonInput) {
@@ -72,7 +131,7 @@ async function onCreate(input: PersonInput) {
   try {
     await peopleApi.create(input)
     showForm.value = false
-    await load(search.value, status.value, page.value)
+    await load(search.value, status.value, page.value, pageSize.value)
   } catch (err) {
     formError.value = err instanceof Error ? err.message : 'Gagal menyimpan'
   } finally {
@@ -180,14 +239,48 @@ async function onCreate(input: PersonInput) {
                 {{ person.full_name }}
               </router-link>
             </td>
-            <td class="py-2 pr-4 text-slate-600">{{ person.nik_masked || '—' }}</td>
-            <td class="py-2 pr-4 text-slate-600">{{ person.phone_masked || '—' }}</td>
+            <td class="py-2 pr-4 text-slate-600">
+              <span class="inline-flex items-center gap-1">
+                <span class="font-mono text-xs">{{ nikDisplay(person) }}</span>
+                <button
+                  v-if="auth.isSuperAdmin"
+                  type="button"
+                  :aria-label="showNik[person.id] ? 'Sembunyikan NIK' : 'Tampilkan NIK'"
+                  class="text-slate-400 hover:text-slate-700"
+                  @click="toggleNik(person)"
+                >
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+                    <circle cx="12" cy="12" r="3" />
+                    <path v-if="!showNik[person.id]" stroke-linecap="round" d="M4 4l16 16" />
+                  </svg>
+                </button>
+              </span>
+            </td>
+            <td class="py-2 pr-4 text-slate-600">
+              <span class="inline-flex items-center gap-1">
+                <span class="font-mono text-xs">{{ phoneDisplay(person) }}</span>
+                <button
+                  v-if="auth.isSuperAdmin"
+                  type="button"
+                  :aria-label="showPhone[person.id] ? 'Sembunyikan telepon' : 'Tampilkan telepon'"
+                  class="text-slate-400 hover:text-slate-700"
+                  @click="togglePhone(person)"
+                >
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+                    <circle cx="12" cy="12" r="3" />
+                    <path v-if="!showPhone[person.id]" stroke-linecap="round" d="M4 4l16 16" />
+                  </svg>
+                </button>
+              </span>
+            </td>
             <td class="py-2 text-slate-600">{{ person.status }}</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <Pagination :meta="meta" @change="onPageChange" />
+    <Pagination :meta="meta" @change="onPageChange" @page-size-change="onPageSizeChange" />
   </section>
 </template>

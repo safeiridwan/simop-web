@@ -9,11 +9,11 @@ export function usePeople() {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  async function load(search = '', status = '', page = 1): Promise<void> {
+  async function load(search = '', status = '', page = 1, pageSize = 10): Promise<void> {
     loading.value = true
     error.value = null
     try {
-      const { data, meta: pageMeta } = await peopleApi.list({ search, status, page })
+      const { data, meta: pageMeta } = await peopleApi.list({ search, status, page, pageSize })
       people.value = data
       meta.value = pageMeta ?? null
     } catch (err) {

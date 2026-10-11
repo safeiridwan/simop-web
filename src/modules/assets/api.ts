@@ -8,7 +8,7 @@ export const assetsApi = {
   createLocation: (input: { name: string; address?: string }) => apiPost<AssetLocation>('/api/v1/asset-locations', input),
 
   list: (query: { search?: string; status?: string; categoryId?: string; page?: number; pageSize?: number } = {}) => {
-    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 20) })
+    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 10) })
     if (query.search) params.set('search', query.search)
     if (query.status) params.set('status', query.status)
     if (query.categoryId) params.set('category_id', query.categoryId)

@@ -9,6 +9,7 @@ const { users, meta, loading, error, load, create } = useUsers()
 
 const search = ref('')
 const page = ref(1)
+const pageSize = ref(10)
 const showForm = ref(false)
 const submitting = ref(false)
 const formError = ref<string | null>(null)
@@ -19,12 +20,18 @@ onMounted(() => void load())
 
 function onSearch() {
   page.value = 1
-  void load(search.value, page.value)
+  void load(search.value, page.value, pageSize.value)
 }
 
 function onPageChange(target: number) {
   page.value = target
-  void load(search.value, page.value)
+  void load(search.value, page.value, pageSize.value)
+}
+
+function onPageSizeChange(size: number) {
+  pageSize.value = size
+  page.value = 1
+  void load(search.value, page.value, pageSize.value)
 }
 
 async function submit() {
@@ -131,6 +138,6 @@ function roleLabel(user: User): string {
       </table>
     </div>
 
-    <Pagination :meta="meta" @change="onPageChange" />
+    <Pagination :meta="meta" @change="onPageChange" @page-size-change="onPageSizeChange" />
   </section>
 </template>

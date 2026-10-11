@@ -13,6 +13,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => user.value !== null)
   const permissions = computed(() => user.value?.permissions ?? [])
+  const isSuperAdmin = computed(() => user.value?.roles.includes(SUPER_ADMIN) ?? false)
 
   function can(code: string): boolean {
     if (!user.value) return false
@@ -46,5 +47,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, ready, isAuthenticated, permissions, can, login, logout, bootstrap }
+  return { user, ready, isAuthenticated, permissions, isSuperAdmin, can, login, logout, bootstrap }
 })

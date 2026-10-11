@@ -6,7 +6,7 @@ import { useClientPage } from '@/composables/useClientPage'
 import { usePermissions } from '../composables/usePermissions'
 
 const { permissions, loading, error, load } = usePermissions()
-const { paged: pagedPermissions, meta: permissionsMeta, setPage: setPermissionsPage } = useClientPage(permissions)
+const { paged: pagedPermissions, meta: permissionsMeta, setPage: setPermissionsPage, setPageSize: setPermissionsPageSize } = useClientPage(permissions)
 
 onMounted(() => void load())
 </script>
@@ -26,6 +26,6 @@ onMounted(() => void load())
       </li>
     </ul>
 
-    <Pagination :meta="permissionsMeta" @change="setPermissionsPage" />
+    <Pagination :meta="permissionsMeta" @change="setPermissionsPage" @page-size-change="setPermissionsPageSize" />
   </section>
 </template>

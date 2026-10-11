@@ -28,6 +28,12 @@ export interface AffiliationInput {
   notes?: string
 }
 
+export interface ImportResult {
+  created: number
+  skipped: number
+  errors: { row: number; message: string }[]
+}
+
 export const AFFILIATION_TYPES: { value: string; label: string; slug: string }[] = [
   { value: 'SYMPATHIZER', label: 'Simpatisan', slug: 'sympathizers' },
   { value: 'VOLUNTEER', label: 'Relawan', slug: 'volunteers' },

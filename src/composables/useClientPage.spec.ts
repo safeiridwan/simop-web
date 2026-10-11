@@ -25,4 +25,14 @@ describe('useClientPage', () => {
     reset()
     expect(page.value).toBe(1)
   })
+
+  it('changes the page size and resets to page 1', () => {
+    const items = ref(Array.from({ length: 45 }, (_, i) => i))
+    const { page, pageSize, paged, setPage, setPageSize } = useClientPage(items, 20)
+    setPage(3)
+    setPageSize(10)
+    expect(pageSize.value).toBe(10)
+    expect(page.value).toBe(1)
+    expect(paged.value).toHaveLength(10)
+  })
 })

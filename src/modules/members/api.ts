@@ -1,5 +1,5 @@
-import { apiGet, apiGetPage, apiPatch, apiPost } from '@/services/http'
-import type { CreateMemberInput, Member, MemberHistory, PageMeta } from './types'
+import { apiGet, apiGetPage, apiPatch, apiPost, apiUpload, downloadFile } from '@/services/http'
+import type { CreateMemberInput, ImportResult, Member, MemberHistory, PageMeta } from './types'
 
 export interface ListMembersQuery {
   page?: number
@@ -12,7 +12,7 @@ export const membersApi = {
   list: (query: ListMembersQuery = {}) => {
     const params = new URLSearchParams()
     params.set('page', String(query.page ?? 1))
-    params.set('page_size', String(query.pageSize ?? 20))
+    params.set('page_size', String(query.pageSize ?? 10))
     if (query.search) params.set('search', query.search)
     if (query.status) params.set('status', query.status)
     return apiGetPage<Member[], PageMeta>(`/api/v1/members?${params.toString()}`)
@@ -26,4 +26,11 @@ export const membersApi = {
   verify: (id: string) => apiPost<Member>(`/api/v1/members/${id}/verify`),
   history: (id: string) => apiGet<MemberHistory[]>(`/api/v1/members/${id}/history`),
   exportUrl: '/api/v1/members/export',
+  importTemplate: (format: 'csv' | 'xlsx') =>
+    downloadFile(`/api/v1/members/import/template?format=${format}`, `template-anggota.${format}`),
+  import: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return apiUpload<ImportResult>('/api/v1/members/import', form)
+  },
 }

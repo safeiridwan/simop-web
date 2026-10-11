@@ -3,20 +3,56 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import SearchSelect from '@/components/SearchSelect.vue'
+import { useAuthStore } from '@/app/stores/auth'
 import { documentsApi } from '@/modules/documents/api'
 import { downloadFile } from '@/services/http'
 import { peopleApi } from '../api'
 import { useRegions } from '../composables/useRegions'
-import type { Address, Person, PersonDocument } from '../types'
+import type { Address, Person, PersonDocument, PersonSecrets } from '../types'
 
 const route = useRoute()
 const id = route.params.id as string
+const auth = useAuthStore()
 
 const person = ref<Person | null>(null)
 const addresses = ref<Address[]>([])
 const documents = ref<PersonDocument[]>([])
+const secrets = ref<PersonSecrets | null>(null)
+const showNik = ref(false)
+const showPhone = ref(false)
 const loading = ref(true)
 const error = ref<string | null>(null)
+
+async function ensureSecrets() {
+  if (secrets.value) return
+  secrets.value = await peopleApi.reveal(id)
+}
+
+async function toggleNik() {
+  if (showNik.value) {
+    showNik.value = false
+    return
+  }
+  try {
+    await ensureSecrets()
+    showNik.value = true
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Gagal membuka NIK'
+  }
+}
+
+async function togglePhone() {
+  if (showPhone.value) {
+    showPhone.value = false
+    return
+  }
+  try {
+    await ensureSecrets()
+    showPhone.value = true
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Gagal membuka telepon'
+  }
+}
 
 const { provinces, cities, districts, villages, loadProvinces, loadCities, loadDistricts, loadVillages } = useRegions()
 
@@ -47,6 +83,9 @@ const villageOptions = computed(() => toOptions(villages.value))
 
 async function refresh() {
   loading.value = true
+  secrets.value = null
+  showNik.value = false
+  showPhone.value = false
   try {
     person.value = await peopleApi.get(id)
     addresses.value = await peopleApi.listAddresses(id)
@@ -249,8 +288,44 @@ async function downloadDocument(doc: PersonDocument) {
       </header>
 
       <dl class="mb-8 grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-4 text-sm sm:grid-cols-2">
-        <div><dt class="text-slate-500">NIK</dt><dd class="text-slate-900">{{ person.nik_masked || '—' }}</dd></div>
-        <div><dt class="text-slate-500">Telepon</dt><dd class="text-slate-900">{{ person.phone_masked || '—' }}</dd></div>
+        <div>
+          <dt class="text-slate-500">NIK</dt>
+          <dd class="inline-flex items-center gap-1 text-slate-900">
+            <span class="font-mono">{{ showNik && secrets ? secrets.nik || '—' : person.nik_masked || '—' }}</span>
+            <button
+              v-if="auth.isSuperAdmin"
+              type="button"
+              :aria-label="showNik ? 'Sembunyikan NIK' : 'Tampilkan NIK'"
+              class="text-slate-400 hover:text-slate-700"
+              @click="toggleNik"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+                <circle cx="12" cy="12" r="3" />
+                <path v-if="!showNik" stroke-linecap="round" d="M4 4l16 16" />
+              </svg>
+            </button>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-slate-500">Telepon</dt>
+          <dd class="inline-flex items-center gap-1 text-slate-900">
+            <span class="font-mono">{{ showPhone && secrets ? secrets.phone || '—' : person.phone_masked || '—' }}</span>
+            <button
+              v-if="auth.isSuperAdmin"
+              type="button"
+              :aria-label="showPhone ? 'Sembunyikan telepon' : 'Tampilkan telepon'"
+              class="text-slate-400 hover:text-slate-700"
+              @click="togglePhone"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+                <circle cx="12" cy="12" r="3" />
+                <path v-if="!showPhone" stroke-linecap="round" d="M4 4l16 16" />
+              </svg>
+            </button>
+          </dd>
+        </div>
         <div><dt class="text-slate-500">Jenis Kelamin</dt><dd class="text-slate-900">{{ person.gender }}</dd></div>
         <div><dt class="text-slate-500">Tempat/Tgl Lahir</dt><dd class="text-slate-900">{{ person.birth_place || '—' }} {{ person.birth_date || '' }}</dd></div>
         <div><dt class="text-slate-500">Email</dt><dd class="text-slate-900">{{ person.email || '—' }}</dd></div>

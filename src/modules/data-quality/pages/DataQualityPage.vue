@@ -19,6 +19,7 @@ const notice = ref<string | null>(null)
 const statusFilter = ref('OPEN')
 const severityFilter = ref('')
 const page = ref(1)
+const pageSize = ref(10)
 
 const canResolve = computed(() => auth.can('data-quality:resolve'))
 
@@ -41,7 +42,7 @@ async function load() {
   error.value = null
   try {
     const [list, sums] = await Promise.all([
-      dataQualityApi.issues({ status: statusFilter.value, severity: severityFilter.value, page: page.value }),
+      dataQualityApi.issues({ status: statusFilter.value, severity: severityFilter.value, page: page.value, pageSize: pageSize.value }),
       dataQualityApi.summary(),
     ])
     issues.value = list.data
@@ -63,6 +64,12 @@ function onFilter() {
 
 function onPageChange(target: number) {
   page.value = target
+  void load()
+}
+
+function onPageSizeChange(size: number) {
+  pageSize.value = size
+  page.value = 1
   void load()
 }
 
@@ -182,6 +189,6 @@ async function resolve(id: string, status: string) {
       </table>
     </div>
 
-    <Pagination :meta="meta" @change="onPageChange" />
+    <Pagination :meta="meta" @change="onPageChange" @page-size-change="onPageSizeChange" />
   </section>
 </template>

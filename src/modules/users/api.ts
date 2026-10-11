@@ -17,7 +17,7 @@ export const usersApi = {
   list: (query: ListUsersQuery = {}) => {
     const params = new URLSearchParams()
     params.set('page', String(query.page ?? 1))
-    params.set('page_size', String(query.pageSize ?? 20))
+    params.set('page_size', String(query.pageSize ?? 10))
     if (query.search) params.set('search', query.search)
     if (query.status) params.set('status', query.status)
     return apiGetPage<User[], PageMeta>(`/api/v1/users?${params.toString()}`)

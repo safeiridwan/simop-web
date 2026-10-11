@@ -18,6 +18,9 @@ const saving = ref(false)
 const promoteForm = reactive({ to_level_id: '', effective_date: '', notes: '' })
 const statusForm = reactive({ status: '', notes: '' })
 
+const editingHistoryId = ref<string | null>(null)
+const historyForm = reactive({ from_level_id: '', to_level_id: '', effective_date: '', notes: '' })
+
 const levelName = (levelId: string | null) => levels.value.find((l) => l.id === levelId)?.name ?? '—'
 
 const promotableLevels = computed(() => levels.value.filter((l) => l.id !== profile.value?.current_level_id))
@@ -68,6 +71,52 @@ async function updateStatus() {
     await refresh()
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal mengubah status'
+  } finally {
+    saving.value = false
+  }
+}
+
+function startEditHistory(h: CadreHistoryEntry) {
+  editingHistoryId.value = h.id
+  historyForm.from_level_id = h.from_level_id ?? ''
+  historyForm.to_level_id = h.to_level_id
+  historyForm.effective_date = h.effective_date ?? ''
+  historyForm.notes = h.notes ?? ''
+}
+
+function cancelEditHistory() {
+  editingHistoryId.value = null
+}
+
+async function saveHistory() {
+  if (!editingHistoryId.value) return
+  saving.value = true
+  error.value = null
+  try {
+    await cadreApi.updateHistory(id, editingHistoryId.value, {
+      from_level_id: historyForm.from_level_id || null,
+      to_level_id: historyForm.to_level_id,
+      effective_date: historyForm.effective_date || undefined,
+      notes: historyForm.notes || undefined,
+    })
+    editingHistoryId.value = null
+    await refresh()
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Gagal menyimpan riwayat'
+  } finally {
+    saving.value = false
+  }
+}
+
+async function removeHistory(h: CadreHistoryEntry) {
+  if (!window.confirm('Hapus baris riwayat ini?')) return
+  saving.value = true
+  error.value = null
+  try {
+    await cadreApi.deleteHistory(id, h.id)
+    await refresh()
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Gagal menghapus riwayat'
   } finally {
     saving.value = false
   }
@@ -134,13 +183,54 @@ async function updateStatus() {
           <h2 class="mb-3 font-semibold text-slate-900">Riwayat Jenjang</h2>
           <ol class="space-y-3 text-sm">
             <li v-for="h in history" :key="h.id" class="border-l-2 border-brand-200 pl-3">
-              <p class="text-slate-900">
-                {{ h.from_level_id ? levelName(h.from_level_id) + ' → ' : '' }}{{ levelName(h.to_level_id) }}
-              </p>
-              <p class="text-xs text-slate-500">
-                {{ h.effective_date || new Date(h.created_at).toLocaleDateString('id-ID') }}
-                <span v-if="h.notes"> · {{ h.notes }}</span>
-              </p>
+              <template v-if="editingHistoryId === h.id">
+                <div class="grid gap-2 sm:grid-cols-2">
+                  <label class="flex flex-col text-slate-600">
+                    Dari
+                    <select v-model="historyForm.from_level_id" class="mt-1 rounded border border-slate-300 px-3 py-2 text-sm">
+                      <option value="">— Tanpa jenjang awal —</option>
+                      <option v-for="l in levels" :key="l.id" :value="l.id">{{ l.name }}</option>
+                    </select>
+                  </label>
+                  <label class="flex flex-col text-slate-600">
+                    Ke
+                    <select v-model="historyForm.to_level_id" class="mt-1 rounded border border-slate-300 px-3 py-2 text-sm">
+                      <option v-for="l in levels" :key="l.id" :value="l.id">{{ l.name }}</option>
+                    </select>
+                  </label>
+                  <label class="flex flex-col text-slate-600">
+                    Tanggal Efektif
+                    <input v-model="historyForm.effective_date" type="date" class="mt-1 rounded border border-slate-300 px-3 py-2 text-sm" />
+                  </label>
+                  <label class="flex flex-col text-slate-600">
+                    Catatan
+                    <input v-model="historyForm.notes" class="mt-1 rounded border border-slate-300 px-3 py-2 text-sm" />
+                  </label>
+                </div>
+                <div class="mt-2 flex gap-2">
+                  <button type="button" :disabled="saving" class="rounded bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50" @click="saveHistory">
+                    Simpan
+                  </button>
+                  <button type="button" class="rounded border border-slate-300 px-3 py-1.5 text-sm" @click="cancelEditHistory">Batal</button>
+                </div>
+              </template>
+              <template v-else>
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <p class="text-slate-900">
+                      {{ h.from_level_id ? levelName(h.from_level_id) + ' → ' : '' }}{{ levelName(h.to_level_id) }}
+                    </p>
+                    <p class="text-xs text-slate-500">
+                      {{ h.effective_date || new Date(h.created_at).toLocaleDateString('id-ID') }}
+                      <span v-if="h.notes"> · {{ h.notes }}</span>
+                    </p>
+                  </div>
+                  <div class="flex shrink-0 gap-2">
+                    <button type="button" class="text-xs text-brand-600 hover:underline" @click="startEditHistory(h)">Ubah</button>
+                    <button type="button" :disabled="saving" class="text-xs text-red-600 hover:underline disabled:opacity-50" @click="removeHistory(h)">Hapus</button>
+                  </div>
+                </div>
+              </template>
             </li>
             <li v-if="history.length === 0" class="text-slate-500">Belum ada riwayat.</li>
           </ol>

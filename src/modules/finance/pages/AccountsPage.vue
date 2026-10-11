@@ -7,7 +7,7 @@ import { financeApi } from '../api'
 import { ACCOUNT_TYPES, accountTypeLabel, type Account } from '../types'
 
 const accounts = ref<Account[]>([])
-const { paged: pagedAccounts, meta: accountsMeta, setPage: setAccountsPage, reset: resetAccountsPage } = useClientPage(accounts)
+const { paged: pagedAccounts, meta: accountsMeta, setPage: setAccountsPage, setPageSize: setAccountsPageSize, reset: resetAccountsPage } = useClientPage(accounts)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const showForm = ref(false)
@@ -93,6 +93,6 @@ async function submit() {
       </table>
     </div>
 
-    <Pagination :meta="accountsMeta" @change="setAccountsPage" />
+    <Pagination :meta="accountsMeta" @change="setAccountsPage" @page-size-change="setAccountsPageSize" />
   </section>
 </template>

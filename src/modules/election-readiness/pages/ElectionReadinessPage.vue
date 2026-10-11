@@ -18,6 +18,7 @@ const error = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const statusFilter = ref('OPEN')
 const page = ref(1)
+const pageSize = ref(10)
 
 const canResolve = computed(() => auth.can('election-readiness:resolve'))
 
@@ -34,7 +35,7 @@ async function load() {
   try {
     const [sum, list] = await Promise.all([
       electionReadinessApi.summary(),
-      electionReadinessApi.checks({ status: statusFilter.value, page: page.value }),
+      electionReadinessApi.checks({ status: statusFilter.value, page: page.value, pageSize: pageSize.value }),
     ])
     summary.value = sum
     checks.value = list.data
@@ -55,6 +56,12 @@ function onFilter() {
 
 function onPageChange(target: number) {
   page.value = target
+  void load()
+}
+
+function onPageSizeChange(size: number) {
+  pageSize.value = size
+  page.value = 1
   void load()
 }
 
@@ -203,6 +210,6 @@ async function onExport() {
       </table>
     </div>
 
-    <Pagination :meta="meta" @change="onPageChange" />
+    <Pagination :meta="meta" @change="onPageChange" @page-size-change="onPageSizeChange" />
   </section>
 </template>

@@ -11,12 +11,13 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const filter = ref('')
 const page = ref(1)
+const pageSize = ref(10)
 
 async function load() {
   loading.value = true
   error.value = null
   try {
-    const { data, meta: pageMeta } = await securityApi.events(filter.value, page.value)
+    const { data, meta: pageMeta } = await securityApi.events(filter.value, page.value, pageSize.value)
     events.value = data
     meta.value = pageMeta ?? null
   } catch (err) {
@@ -35,6 +36,12 @@ function onFilter() {
 
 function onPageChange(target: number) {
   page.value = target
+  void load()
+}
+
+function onPageSizeChange(size: number) {
+  pageSize.value = size
+  page.value = 1
   void load()
 }
 </script>
@@ -85,6 +92,6 @@ function onPageChange(target: number) {
       </table>
     </div>
 
-    <Pagination :meta="meta" @change="onPageChange" />
+    <Pagination :meta="meta" @change="onPageChange" @page-size-change="onPageSizeChange" />
   </section>
 </template>

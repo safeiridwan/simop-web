@@ -14,7 +14,7 @@ export interface ListDocumentsQuery {
 
 export const documentsApi = {
   list: (query: ListDocumentsQuery = {}) => {
-    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 20) })
+    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 10) })
     if (query.search) params.set('search', query.search)
     if (query.status) params.set('status', query.status)
     if (query.documentType) params.set('document_type', query.documentType)

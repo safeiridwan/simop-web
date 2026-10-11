@@ -14,13 +14,14 @@ const submitting = ref(false)
 const search = ref('')
 const statusFilter = ref('')
 const page = ref(1)
+const pageSize = ref(10)
 const form = reactive({ title: '', description: '', confidentiality: 'RESTRICTED' })
 
 async function load() {
   loading.value = true
   error.value = null
   try {
-    const { data, meta: pageMeta } = await ethicsApi.list({ search: search.value, status: statusFilter.value, page: page.value })
+    const { data, meta: pageMeta } = await ethicsApi.list({ search: search.value, status: statusFilter.value, page: page.value, pageSize: pageSize.value })
     cases.value = data
     meta.value = pageMeta ?? null
   } catch (err) {
@@ -39,6 +40,12 @@ function onFilter() {
 
 function onPageChange(target: number) {
   page.value = target
+  void load()
+}
+
+function onPageSizeChange(size: number) {
+  pageSize.value = size
+  page.value = 1
   void load()
 }
 
@@ -123,6 +130,6 @@ async function submit() {
       </table>
     </div>
 
-    <Pagination :meta="meta" @change="onPageChange" />
+    <Pagination :meta="meta" @change="onPageChange" @page-size-change="onPageSizeChange" />
   </section>
 </template>

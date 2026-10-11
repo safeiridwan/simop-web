@@ -1,5 +1,5 @@
-import { apiGetPage, apiPost } from '@/services/http'
-import type { Affiliation, AffiliationInput, PageMeta } from './types'
+import { apiGetPage, apiPost, apiUpload, downloadFile } from '@/services/http'
+import type { Affiliation, AffiliationInput, ImportResult, PageMeta } from './types'
 
 export interface ListAffiliationsQuery {
   page?: number
@@ -13,11 +13,18 @@ export const affiliationsApi = {
   list: (query: ListAffiliationsQuery = {}) => {
     const params = new URLSearchParams()
     params.set('page', String(query.page ?? 1))
-    params.set('page_size', String(query.pageSize ?? 20))
+    params.set('page_size', String(query.pageSize ?? 10))
     for (const type of query.types ?? []) params.append('affiliation_type', type)
     if (query.status) params.set('status', query.status)
     if (query.search) params.set('search', query.search)
     return apiGetPage<Affiliation[], PageMeta>(`/api/v1/affiliations?${params.toString()}`)
   },
   create: (input: AffiliationInput) => apiPost<Affiliation>('/api/v1/affiliations', input),
+  importTemplate: (format: 'csv' | 'xlsx') =>
+    downloadFile(`/api/v1/affiliations/import/template?format=${format}`, `template-non-kader.${format}`),
+  import: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return apiUpload<ImportResult>('/api/v1/affiliations/import', form)
+  },
 }

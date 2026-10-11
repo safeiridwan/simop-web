@@ -35,6 +35,12 @@ export interface PageMeta {
   total: number
 }
 
+export interface ImportResult {
+  created: number
+  skipped: number
+  errors: { row: number; message: string }[]
+}
+
 export interface Training {
   id: string
   code: string

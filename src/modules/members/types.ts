@@ -34,6 +34,12 @@ export interface CreateMemberInput {
   membership_source?: string
 }
 
+export interface ImportResult {
+  created: number
+  skipped: number
+  errors: { row: number; message: string }[]
+}
+
 export const MEMBER_STATUSES: { value: string; label: string }[] = [
   { value: 'ACTIVE', label: 'Aktif' },
   { value: 'INACTIVE', label: 'Tidak aktif' },

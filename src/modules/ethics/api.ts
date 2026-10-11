@@ -12,7 +12,7 @@ import type {
 
 export const ethicsApi = {
   list: (query: { search?: string; status?: string; page?: number; pageSize?: number } = {}) => {
-    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 20) })
+    const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 10) })
     if (query.search) params.set('search', query.search)
     if (query.status) params.set('status', query.status)
     return apiGetPage<EthicsCase[], PageMeta>(`/api/v1/ethics/cases?${params.toString()}`)

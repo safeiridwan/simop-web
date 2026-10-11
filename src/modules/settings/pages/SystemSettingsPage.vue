@@ -9,7 +9,7 @@ import type { Setting } from '../types'
 
 const auth = useAuthStore()
 const settings = ref<Setting[]>([])
-const { paged: pagedSettings, meta: settingsMeta, setPage: setSettingsPage } = useClientPage(settings)
+const { paged: pagedSettings, meta: settingsMeta, setPage: setSettingsPage, setPageSize: setSettingsPageSize } = useClientPage(settings)
 const loading = ref(true)
 const saving = ref(false)
 const error = ref<string | null>(null)
@@ -99,6 +99,6 @@ function canUpdate(): boolean {
       </table>
     </div>
 
-    <Pagination :meta="settingsMeta" @change="setSettingsPage" />
+    <Pagination :meta="settingsMeta" @change="setSettingsPage" @page-size-change="setSettingsPageSize" />
   </section>
 </template>

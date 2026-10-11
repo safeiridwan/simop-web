@@ -19,6 +19,7 @@ const error = ref<string | null>(null)
 const saving = ref(false)
 const showForm = ref(false)
 const page = ref(1)
+const pageSize = ref(10)
 const form = reactive({ organization_unit_id: '', account_id: '', fiscal_year: new Date().getFullYear(), budget_amount: '' })
 
 async function load() {
@@ -26,7 +27,7 @@ async function load() {
   error.value = null
   try {
     const [list, accountList, unitList] = await Promise.all([
-      financeApi.listBudgets({ page: page.value }),
+      financeApi.listBudgets({ page: page.value, pageSize: pageSize.value }),
       financeApi.listAccounts(),
       organizationApi.listUnits({ pageSize: 200 }),
     ])
@@ -46,6 +47,12 @@ onMounted(load)
 
 function onPageChange(target: number) {
   page.value = target
+  void load()
+}
+
+function onPageSizeChange(size: number) {
+  pageSize.value = size
+  page.value = 1
   void load()
 }
 
@@ -152,6 +159,6 @@ function transitionBudget(id: string, action: string) {
       </table>
     </div>
 
-    <Pagination :meta="meta" @change="onPageChange" />
+    <Pagination :meta="meta" @change="onPageChange" @page-size-change="onPageSizeChange" />
   </section>
 </template>

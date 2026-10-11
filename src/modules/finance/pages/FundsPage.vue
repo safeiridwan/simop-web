@@ -7,7 +7,7 @@ import { financeApi } from '../api'
 import type { Fund } from '../types'
 
 const funds = ref<Fund[]>([])
-const { paged: pagedFunds, meta: fundsMeta, setPage: setFundsPage, reset: resetFundsPage } = useClientPage(funds)
+const { paged: pagedFunds, meta: fundsMeta, setPage: setFundsPage, setPageSize: setFundsPageSize, reset: resetFundsPage } = useClientPage(funds)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const showForm = ref(false)
@@ -87,6 +87,6 @@ async function submit() {
       </table>
     </div>
 
-    <Pagination :meta="fundsMeta" @change="setFundsPage" />
+    <Pagination :meta="fundsMeta" @change="setFundsPage" @page-size-change="setFundsPageSize" />
   </section>
 </template>

@@ -106,6 +106,22 @@ export async function apiDelete<T>(path: string): Promise<T> {
   return (await request<T>('DELETE', path)).data
 }
 
+/** POST a multipart/form-data body and unwrap `data`. */
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  const token = getAccessToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+  const res = await fetch(`${baseUrl}${path}`, {
+    method: 'POST',
+    headers,
+    credentials: 'include',
+    body: form,
+  })
+  const body = (await res.json()) as { data: T; error?: { message?: string } }
+  if (!res.ok) throw new Error(body.error?.message ?? 'Upload gagal')
+  return body.data
+}
+
 /** Download a file from an authenticated endpoint and save it. */
 export async function downloadFile(path: string, filename: string): Promise<void> {
   let res = await send('GET', path)
