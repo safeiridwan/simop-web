@@ -19,6 +19,8 @@ export interface ListCadresQuery {
   search?: string
   levelId?: string
   status?: string
+  sort?: string | null
+  direction?: string | null
 }
 
 export const cadreApi = {
@@ -31,6 +33,8 @@ export const cadreApi = {
     if (query.search) params.set('search', query.search)
     if (query.levelId) params.set('level_id', query.levelId)
     if (query.status) params.set('status', query.status)
+    if (query.sort) params.set('sort', query.sort)
+    if (query.direction) params.set('direction', query.direction)
     return apiGetPage<CadreProfile[], PageMeta>(`/api/v1/cadres?${params.toString()}`)
   },
   get: (id: string) => apiGet<CadreProfile>(`/api/v1/cadres/${id}`),

@@ -9,6 +9,9 @@ export interface Member {
   membership_source: string | null
   verified_at: string | null
   resigned_at: string | null
+  city_name: string | null
+  district_name: string | null
+  village_name: string | null
   created_at: string
   updated_at: string
 }

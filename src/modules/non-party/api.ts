@@ -7,6 +7,8 @@ export interface ListAffiliationsQuery {
   types?: string[]
   status?: string
   search?: string
+  sort?: string | null
+  direction?: string | null
 }
 
 export const affiliationsApi = {
@@ -17,6 +19,8 @@ export const affiliationsApi = {
     for (const type of query.types ?? []) params.append('affiliation_type', type)
     if (query.status) params.set('status', query.status)
     if (query.search) params.set('search', query.search)
+    if (query.sort) params.set('sort', query.sort)
+    if (query.direction) params.set('direction', query.direction)
     return apiGetPage<Affiliation[], PageMeta>(`/api/v1/affiliations?${params.toString()}`)
   },
   create: (input: AffiliationInput) => apiPost<Affiliation>('/api/v1/affiliations', input),

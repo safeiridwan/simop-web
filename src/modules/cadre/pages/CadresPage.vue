@@ -2,9 +2,11 @@
 import { onMounted, reactive, ref } from 'vue'
 
 import Pagination from '@/components/Pagination.vue'
+import SortableTh from '@/components/SortableTh.vue'
 import PersonPicker from '@/components/PersonPicker.vue'
 import type { Person } from '@/modules/people/types'
 import { cadreApi } from '../api'
+import { useSort } from '@/composables/useSort'
 import { CADRE_STATUSES, type CadreLevel, type CadreProfile, type ImportResult, type PageMeta } from '../types'
 
 const cadres = ref<CadreProfile[]>([])
@@ -28,13 +30,21 @@ const search = ref('')
 const statusFilter = ref('')
 const page = ref(1)
 const pageSize = ref(10)
+const { sort, direction, toggle } = useSort()
 
 async function load() {
   loading.value = true
   error.value = null
   try {
     const [list, levelList] = await Promise.all([
-      cadreApi.list({ search: search.value, status: statusFilter.value, page: page.value, pageSize: pageSize.value }),
+      cadreApi.list({
+        search: search.value,
+        status: statusFilter.value,
+        page: page.value,
+        pageSize: pageSize.value,
+        sort: sort.value,
+        direction: direction.value,
+      }),
       cadreApi.levels(),
     ])
     cadres.value = list.data
@@ -48,6 +58,12 @@ async function load() {
 }
 
 onMounted(load)
+
+function onSort(field: string) {
+  toggle(field)
+  page.value = 1
+  void load()
+}
 
 function onFilter() {
   page.value = 1
@@ -152,7 +168,7 @@ async function submit() {
 
     <div v-if="showImport" class="mb-6 space-y-3 rounded-lg border border-slate-200 bg-white p-4">
       <p class="text-sm text-slate-600">
-        Unggah berkas CSV atau XLSX. Orang dicocokkan lewat NIK (dibuat otomatis bila belum ada) dan jenjang memakai kode
+        Unggah berkas CSV atau XLSX. Orang dicocokkan lewat NIK atau nomor HP (dibuat otomatis bila belum ada) dan jenjang memakai kode
         (mis. MULA, MUDA, MADYA, DEWASA, AHLI). Baris gagal atau duplikat dilewati dan dilaporkan.
       </p>
       <div class="flex flex-wrap items-center gap-2">
@@ -215,13 +231,16 @@ async function submit() {
     <p v-else-if="cadres.length === 0" class="text-sm text-slate-500">Belum ada kader.</p>
 
     <div v-else class="overflow-x-auto">
-      <table class="w-full min-w-[36rem] border-collapse text-sm">
+      <table class="w-full min-w-[56rem] border-collapse text-sm">
         <thead>
           <tr class="border-b border-slate-200 text-left text-slate-500">
-            <th class="py-2 pr-4">Nama</th>
-            <th class="py-2 pr-4">Kode</th>
-            <th class="py-2 pr-4">Jenjang</th>
-            <th class="py-2">Status</th>
+            <SortableTh field="full_name" label="Nama" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="person_code" label="Kode" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="level_name" label="Jenjang" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="city_name" label="Kabupaten/Kota" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="district_name" label="Kecamatan" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="village_name" label="Kelurahan" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="status" label="Status" :active="sort" :direction="direction" @sort="onSort" />
           </tr>
         </thead>
         <tbody>
@@ -231,6 +250,9 @@ async function submit() {
             </td>
             <td class="py-2 pr-4 font-mono text-xs text-slate-500">{{ c.person_code }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ c.level_name }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ c.city_name || '—' }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ c.district_name || '—' }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ c.village_name || '—' }}</td>
             <td class="py-2 text-slate-600">{{ c.status }}</td>
           </tr>
         </tbody>

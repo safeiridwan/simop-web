@@ -2,9 +2,11 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 
 import Pagination from '@/components/Pagination.vue'
+import SortableTh from '@/components/SortableTh.vue'
 import PersonPicker from '@/components/PersonPicker.vue'
 import type { Person } from '@/modules/people/types'
 import { affiliationsApi } from '../api'
+import { useSort } from '@/composables/useSort'
 import { AFFILIATION_TYPES, affiliationTypeLabel, type Affiliation, type ImportResult, type PageMeta } from '../types'
 
 const affiliations = ref<Affiliation[]>([])
@@ -17,6 +19,7 @@ const selectedTypes = ref<string[]>(AFFILIATION_TYPES.map((t) => t.value))
 const allSelected = computed(() => selectedTypes.value.length === AFFILIATION_TYPES.length)
 const page = ref(1)
 const pageSize = ref(10)
+const { sort, direction, toggle } = useSort()
 
 const showForm = ref(false)
 const submitting = ref(false)
@@ -38,6 +41,8 @@ async function load() {
       types: selectedTypes.value,
       page: page.value,
       pageSize: pageSize.value,
+      sort: sort.value,
+      direction: direction.value,
     })
     affiliations.value = data
     meta.value = pageMeta ?? null
@@ -50,6 +55,12 @@ async function load() {
 }
 
 onMounted(load)
+
+function onSort(field: string) {
+  toggle(field)
+  page.value = 1
+  void load()
+}
 
 function onFilter() {
   page.value = 1
@@ -163,7 +174,7 @@ async function submit() {
 
     <div v-if="showImport" class="mb-6 space-y-3 rounded-lg border border-slate-200 bg-white p-4">
       <p class="text-sm text-slate-600">
-        Unggah berkas CSV atau XLSX. Orang dicocokkan lewat NIK (dibuat otomatis bila belum ada) dan jenis memakai kode
+        Unggah berkas CSV atau XLSX. Orang dicocokkan lewat NIK atau nomor HP (dibuat otomatis bila belum ada) dan jenis memakai kode
         (mis. SYMPATHIZER, VOLUNTEER). Baris gagal dilewati dan dilaporkan.
       </p>
       <div class="flex flex-wrap items-center gap-2">
@@ -249,14 +260,17 @@ async function submit() {
     <p v-else-if="affiliations.length === 0" class="text-sm text-slate-500">Belum ada data.</p>
 
     <div v-else class="overflow-x-auto">
-      <table class="w-full min-w-[40rem] border-collapse text-sm">
+      <table class="w-full min-w-[60rem] border-collapse text-sm">
         <thead>
           <tr class="border-b border-slate-200 text-left text-slate-500">
-            <th class="py-2 pr-4">Nama</th>
-            <th class="py-2 pr-4">Kode</th>
-            <th class="py-2 pr-4">Jenis</th>
-            <th class="py-2 pr-4">Mulai</th>
-            <th class="py-2">Status</th>
+            <SortableTh field="full_name" label="Nama" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="person_code" label="Kode" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="affiliation_type" label="Jenis" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="city_name" label="Kabupaten/Kota" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="district_name" label="Kecamatan" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="village_name" label="Kelurahan" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="start_date" label="Mulai" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="status" label="Status" :active="sort" :direction="direction" @sort="onSort" />
           </tr>
         </thead>
         <tbody>
@@ -264,6 +278,9 @@ async function submit() {
             <td class="py-2 pr-4 text-slate-900">{{ item.full_name }}</td>
             <td class="py-2 pr-4 font-mono text-xs text-slate-500">{{ item.person_code }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ affiliationTypeLabel(item.affiliation_type) }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ item.city_name || '—' }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ item.district_name || '—' }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ item.village_name || '—' }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ item.start_date || '—' }}</td>
             <td class="py-2 text-slate-600">{{ item.status }}</td>
           </tr>

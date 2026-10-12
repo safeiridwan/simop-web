@@ -9,6 +9,9 @@ export interface Affiliation {
   status: string
   source: string | null
   notes: string | null
+  city_name: string | null
+  district_name: string | null
+  village_name: string | null
   created_at: string
 }
 

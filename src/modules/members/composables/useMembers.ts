@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 
-import { membersApi } from '../api'
+import { membersApi, type ListMembersQuery } from '../api'
 import type { PageMeta, Member } from '../types'
 
 export function useMembers() {
@@ -9,11 +9,11 @@ export function useMembers() {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  async function load(search = '', status = '', page = 1, pageSize = 10): Promise<void> {
+  async function load(query: ListMembersQuery = {}): Promise<void> {
     loading.value = true
     error.value = null
     try {
-      const { data, meta: pageMeta } = await membersApi.list({ search, status, page, pageSize })
+      const { data, meta: pageMeta } = await membersApi.list({ page: 1, pageSize: 10, ...query })
       members.value = data
       meta.value = pageMeta ?? null
     } catch (err) {

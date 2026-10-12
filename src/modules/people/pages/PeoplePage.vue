@@ -2,11 +2,13 @@
 import { onMounted, ref } from 'vue'
 
 import Pagination from '@/components/Pagination.vue'
+import SortableTh from '@/components/SortableTh.vue'
 import PersonForm from '../components/PersonForm.vue'
 import { useAuthStore } from '@/app/stores/auth'
 import { peopleApi } from '../api'
 import type { ImportResult, Person, PersonInput, PersonSecrets } from '../types'
 import { usePeople } from '../composables/usePeople'
+import { useSort } from '@/composables/useSort'
 
 const auth = useAuthStore()
 const { people, meta, loading, error, load } = usePeople()
@@ -15,6 +17,7 @@ const search = ref('')
 const status = ref('')
 const page = ref(1)
 const pageSize = ref(10)
+const { sort, direction, toggle } = useSort()
 const showForm = ref(false)
 const submitting = ref(false)
 const formError = ref<string | null>(null)
@@ -62,11 +65,28 @@ function phoneDisplay(person: Person): string {
   return showPhone.value[person.id] ? secrets.value[person.id]?.phone || '—' : person.phone_masked || '—'
 }
 
+function currentQuery() {
+  return {
+    search: search.value,
+    status: status.value,
+    page: page.value,
+    pageSize: pageSize.value,
+    sort: sort.value,
+    direction: direction.value,
+  }
+}
+
 function reload() {
   secrets.value = {}
   showNik.value = {}
   showPhone.value = {}
-  void load(search.value, status.value, page.value, pageSize.value)
+  void load(currentQuery())
+}
+
+function onSort(field: string) {
+  toggle(field)
+  page.value = 1
+  reload()
 }
 
 const showImport = ref(false)
@@ -93,7 +113,7 @@ async function onImport() {
   try {
     importResult.value = await peopleApi.importPeople(importFile.value)
     importFile.value = null
-    await load(search.value, status.value, page.value, pageSize.value)
+    await load(currentQuery())
   } catch (err) {
     importError.value = err instanceof Error ? err.message : 'Gagal mengimpor'
   } finally {
@@ -131,7 +151,7 @@ async function onCreate(input: PersonInput) {
   try {
     await peopleApi.create(input)
     showForm.value = false
-    await load(search.value, status.value, page.value, pageSize.value)
+    await load(currentQuery())
   } catch (err) {
     formError.value = err instanceof Error ? err.message : 'Gagal menyimpan'
   } finally {
@@ -172,7 +192,7 @@ async function onCreate(input: PersonInput) {
 
     <div v-if="showImport" class="mb-6 space-y-3 rounded-lg border border-slate-200 bg-white p-4">
       <p class="text-sm text-slate-600">
-        Unggah berkas CSV atau XLSX. Baris dengan NIK duplikat atau tidak valid akan dilewati dan dilaporkan.
+        Unggah berkas CSV atau XLSX. Baris yang NIK atau nomor HP-nya sudah terdaftar (data orang lama dipakai ulang) atau tidak valid akan dilewati dan dilaporkan. Kolom alamat opsional diisi bila wilayah cocok.
       </p>
       <div class="flex flex-wrap items-center gap-2">
         <span class="text-sm text-slate-500">Template:</span>
@@ -221,14 +241,17 @@ async function onCreate(input: PersonInput) {
     <p v-else-if="people.length === 0" class="text-sm text-slate-500">Belum ada data orang.</p>
 
     <div v-else class="overflow-x-auto">
-      <table class="w-full min-w-[42rem] border-collapse text-sm">
+      <table class="w-full min-w-[60rem] border-collapse text-sm">
         <thead>
           <tr class="border-b border-slate-200 text-left text-slate-500">
-            <th class="py-2 pr-4">Kode</th>
-            <th class="py-2 pr-4">Nama</th>
+            <SortableTh field="person_code" label="Kode" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="full_name" label="Nama" :active="sort" :direction="direction" @sort="onSort" />
             <th class="py-2 pr-4">NIK</th>
             <th class="py-2 pr-4">Telepon</th>
-            <th class="py-2">Status</th>
+            <SortableTh field="city_name" label="Kabupaten/Kota" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="district_name" label="Kecamatan" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="village_name" label="Kelurahan" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="status" label="Status" :active="sort" :direction="direction" @sort="onSort" />
           </tr>
         </thead>
         <tbody>
@@ -275,6 +298,9 @@ async function onCreate(input: PersonInput) {
                 </button>
               </span>
             </td>
+            <td class="py-2 pr-4 text-slate-600">{{ person.city_name || '—' }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ person.district_name || '—' }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ person.village_name || '—' }}</td>
             <td class="py-2 text-slate-600">{{ person.status }}</td>
           </tr>
         </tbody>

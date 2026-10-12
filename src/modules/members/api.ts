@@ -6,6 +6,8 @@ export interface ListMembersQuery {
   pageSize?: number
   search?: string
   status?: string
+  sort?: string | null
+  direction?: string | null
 }
 
 export const membersApi = {
@@ -15,6 +17,8 @@ export const membersApi = {
     params.set('page_size', String(query.pageSize ?? 10))
     if (query.search) params.set('search', query.search)
     if (query.status) params.set('status', query.status)
+    if (query.sort) params.set('sort', query.sort)
+    if (query.direction) params.set('direction', query.direction)
     return apiGetPage<Member[], PageMeta>(`/api/v1/members?${params.toString()}`)
   },
   get: (id: string) => apiGet<Member>(`/api/v1/members/${id}`),

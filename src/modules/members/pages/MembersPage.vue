@@ -2,11 +2,13 @@
 import { onMounted, ref } from 'vue'
 
 import Pagination from '@/components/Pagination.vue'
+import SortableTh from '@/components/SortableTh.vue'
 import PersonPicker from '@/components/PersonPicker.vue'
 import type { Person } from '@/modules/people/types'
 import { downloadFile } from '@/services/http'
 import { membersApi } from '../api'
 import { useMembers } from '../composables/useMembers'
+import { useSort } from '@/composables/useSort'
 import { MEMBER_STATUSES, memberStatusLabel, type CreateMemberInput, type ImportResult } from '../types'
 
 const { members, meta, loading, error, load } = useMembers()
@@ -15,6 +17,7 @@ const search = ref('')
 const status = ref('')
 const page = ref(1)
 const pageSize = ref(10)
+const { sort, direction, toggle } = useSort()
 const showForm = ref(false)
 const submitting = ref(false)
 const formError = ref<string | null>(null)
@@ -28,6 +31,23 @@ const importing = ref(false)
 const importError = ref<string | null>(null)
 const importResult = ref<ImportResult | null>(null)
 const importFile = ref<File | null>(null)
+
+function currentQuery() {
+  return {
+    search: search.value,
+    status: status.value,
+    page: page.value,
+    pageSize: pageSize.value,
+    sort: sort.value,
+    direction: direction.value,
+  }
+}
+
+function onSort(field: string) {
+  toggle(field)
+  page.value = 1
+  void load(currentQuery())
+}
 
 onMounted(() => void load())
 
@@ -47,7 +67,7 @@ async function onImport() {
   try {
     importResult.value = await membersApi.import(importFile.value)
     importFile.value = null
-    await load(search.value, status.value, page.value, pageSize.value)
+    await load(currentQuery())
   } catch (err) {
     importError.value = err instanceof Error ? err.message : 'Gagal mengimpor'
   } finally {
@@ -65,18 +85,18 @@ async function downloadImportTemplate(format: 'csv' | 'xlsx') {
 
 function onFilter() {
   page.value = 1
-  void load(search.value, status.value, page.value, pageSize.value)
+  void load(currentQuery())
 }
 
 function onPageChange(target: number) {
   page.value = target
-  void load(search.value, status.value, page.value, pageSize.value)
+  void load(currentQuery())
 }
 
 function onPageSizeChange(size: number) {
   pageSize.value = size
   page.value = 1
-  void load(search.value, status.value, page.value, pageSize.value)
+  void load(currentQuery())
 }
 
 async function onExport() {
@@ -103,7 +123,7 @@ async function submit() {
     selectedPerson.value = null
     joinDate.value = ''
     source.value = ''
-    await load(search.value, status.value, page.value, pageSize.value)
+    await load(currentQuery())
   } catch (err) {
     formError.value = err instanceof Error ? err.message : 'Gagal menambah anggota'
   } finally {
@@ -146,7 +166,7 @@ async function submit() {
 
     <div v-if="showImport" class="mb-6 space-y-3 rounded-lg border border-slate-200 bg-white p-4">
       <p class="text-sm text-slate-600">
-        Unggah berkas CSV atau XLSX. Orang pada tiap baris dicocokkan lewat NIK; bila belum ada, orang baru dibuat otomatis.
+        Unggah berkas CSV atau XLSX. Orang pada tiap baris dicocokkan lewat NIK atau nomor HP; bila belum ada, orang baru dibuat otomatis.
         Baris yang gagal atau duplikat dilewati dan dilaporkan.
       </p>
       <div class="flex flex-wrap items-center gap-2">
@@ -214,13 +234,16 @@ async function submit() {
     <p v-else-if="members.length === 0" class="text-sm text-slate-500">Belum ada anggota.</p>
 
     <div v-else class="overflow-x-auto">
-      <table class="w-full min-w-[40rem] border-collapse text-sm">
+      <table class="w-full min-w-[58rem] border-collapse text-sm">
         <thead>
           <tr class="border-b border-slate-200 text-left text-slate-500">
-            <th class="py-2 pr-4">No. Anggota</th>
-            <th class="py-2 pr-4">Nama</th>
-            <th class="py-2 pr-4">Status</th>
-            <th class="py-2">Tgl Gabung</th>
+            <SortableTh field="member_number" label="No. Anggota" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="full_name" label="Nama" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="city_name" label="Kabupaten/Kota" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="district_name" label="Kecamatan" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="village_name" label="Kelurahan" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="status" label="Status" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="join_date" label="Tgl Gabung" :active="sort" :direction="direction" @sort="onSort" />
           </tr>
         </thead>
         <tbody>
@@ -231,6 +254,9 @@ async function submit() {
                 {{ member.full_name }}
               </router-link>
             </td>
+            <td class="py-2 pr-4 text-slate-600">{{ member.city_name || '—' }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ member.district_name || '—' }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ member.village_name || '—' }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ memberStatusLabel(member.status) }}</td>
             <td class="py-2 text-slate-600">{{ member.join_date || '—' }}</td>
           </tr>

@@ -9,6 +9,9 @@ export interface Person {
   phone_masked: string
   email: string
   status: string
+  city_name: string | null
+  district_name: string | null
+  village_name: string | null
   created_at: string
   updated_at: string
 }

@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 
-import { peopleApi } from '../api'
+import { peopleApi, type ListPeopleQuery } from '../api'
 import type { PageMeta, Person, PersonInput } from '../types'
 
 export function usePeople() {
@@ -9,11 +9,11 @@ export function usePeople() {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  async function load(search = '', status = '', page = 1, pageSize = 10): Promise<void> {
+  async function load(query: ListPeopleQuery = {}): Promise<void> {
     loading.value = true
     error.value = null
     try {
-      const { data, meta: pageMeta } = await peopleApi.list({ search, status, page, pageSize })
+      const { data, meta: pageMeta } = await peopleApi.list({ page: 1, pageSize: 10, ...query })
       people.value = data
       meta.value = pageMeta ?? null
     } catch (err) {
