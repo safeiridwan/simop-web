@@ -73,7 +73,7 @@ function submit() {
   void run(async () => {
     await financeApi.createBudget({
       organization_unit_id: form.organization_unit_id,
-      account_id: form.account_id,
+      account_id: form.account_id || undefined,
       fiscal_year: Number(form.fiscal_year),
       budget_amount: Number(form.budget_amount),
     })
@@ -110,8 +110,8 @@ function transitionBudget(id: string, action: string) {
         <option value="" disabled>Unit organisasi</option>
         <option v-for="u in units" :key="u.id" :value="u.id">{{ u.name }}</option>
       </select>
-      <select v-model="form.account_id" required class="rounded border border-slate-300 px-3 py-2 text-sm">
-        <option value="" disabled>Akun</option>
+      <select v-model="form.account_id" class="rounded border border-slate-300 px-3 py-2 text-sm">
+        <option value="">Tanpa akun (lump-sum)</option>
         <option v-for="a in accounts" :key="a.id" :value="a.id">{{ a.code }} {{ a.name }}</option>
       </select>
       <input v-model="form.fiscal_year" type="number" placeholder="Tahun" required class="rounded border border-slate-300 px-3 py-2 text-sm" />
@@ -138,7 +138,7 @@ function transitionBudget(id: string, action: string) {
         </thead>
         <tbody>
           <tr v-for="b in budgets" :key="b.id" class="border-b border-slate-100">
-            <td class="py-2 pr-4 text-slate-900">{{ accountNames[b.account_id] ?? b.account_id }}</td>
+            <td class="py-2 pr-4 text-slate-900">{{ b.account_id ? accountNames[b.account_id] ?? b.account_id : '—' }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ b.fiscal_year }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ b.budget_amount.toLocaleString('id-ID') }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ b.status }}</td>

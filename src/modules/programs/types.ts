@@ -9,7 +9,12 @@ export interface Program {
   program_type: string | null
   start_date: string | null
   end_date: string | null
+  activity_date: string | null
+  location: string | null
   person_in_charge_id: string | null
+  requested_amount: number | null
+  approved_amount: number | null
+  proposal_file_id: string | null
   status: string
   approved_at: string | null
   created_at: string
@@ -20,14 +25,6 @@ export interface ProgramTarget {
   id: string
   program_id: string
   target_name: string
-  target_value: number | null
-  unit: string | null
-}
-
-export interface ProgramIndicator {
-  id: string
-  program_id: string
-  indicator_name: string
   target_value: number | null
   actual_value: number | null
   unit: string | null
@@ -40,50 +37,24 @@ export interface ProgramReport {
   summary: string | null
   period_start: string | null
   period_end: string | null
+  actual_amount: number | null
+  file_id: string | null
   created_at: string
+}
+
+export interface ProgramCoverage {
+  fiscal_year: number
+  pagu: number
+  committed: number
+  requested: number
+  remaining: number
 }
 
 export interface ProgramDetail {
   program: Program
   targets: ProgramTarget[]
-  indicators: ProgramIndicator[]
   reports: ProgramReport[]
-}
-
-export interface Activity {
-  id: string
-  program_id: string | null
-  program_name: string | null
-  organization_unit_id: string
-  organization_unit_name: string
-  name: string
-  description: string | null
-  activity_date: string | null
-  location: string | null
-  person_in_charge_id: string | null
-  status: string
-  created_at: string
-}
-
-export interface ActivityParticipant {
-  id: string
-  activity_id: string
-  person_id: string
-  person_code: string
-  full_name: string
-  participant_type: string
-}
-
-export interface ActivityAttendance {
-  id: string
-  activity_id: string
-  person_id: string
-  person_code: string
-  full_name: string
-  attendance_at: string | null
-  method: string | null
-  status: string
-  notes: string | null
+  coverage?: ProgramCoverage
 }
 
 export interface PageMeta {
@@ -107,19 +78,6 @@ export const PROGRAM_TRANSITIONS: Record<string, { action: string; label: string
   APPROVED: [{ action: 'start', label: 'Mulai', permission: 'programs:update' }],
   RUNNING: [{ action: 'complete', label: 'Selesaikan', permission: 'programs:update' }],
 }
-
-export const PARTICIPANT_TYPES: { value: string; label: string }[] = [
-  { value: 'PARTICIPANT', label: 'Peserta' },
-  { value: 'SPEAKER', label: 'Pembicara' },
-  { value: 'COMMITTEE', label: 'Panitia' },
-  { value: 'GUEST', label: 'Tamu' },
-]
-
-export const ATTENDANCE_STATUSES: { value: string; label: string }[] = [
-  { value: 'PRESENT', label: 'Hadir' },
-  { value: 'ABSENT', label: 'Tidak hadir' },
-  { value: 'EXCUSED', label: 'Izin' },
-]
 
 export function programStatusLabel(status: string): string {
   return PROGRAM_STATUSES.find((s) => s.value === status)?.label ?? status

@@ -21,7 +21,7 @@ const cards = computed(() => {
     { label: 'Unit Organisasi', value: c.organization_units, to: '/organization', permission: 'organization:read' },
     { label: 'Program', value: c.programs, to: '/programs', permission: 'programs:read' },
     { label: 'Program Berjalan', value: c.running_programs, to: '/programs', permission: 'programs:read' },
-    { label: 'Kegiatan', value: c.activities, to: '/activities', permission: 'programs:read' },
+    { label: 'Kegiatan', value: c.activities, to: '/programs', permission: 'programs:read' },
     { label: 'Tugas Terbuka', value: c.open_tasks, to: '/tasks', permission: 'governance:read' },
     { label: 'Rapat Terencana', value: c.planned_meetings, to: '/meetings', permission: 'governance:read' },
     { label: 'Aset Tersedia', value: c.available_assets, to: '/assets', permission: 'assets:read' },

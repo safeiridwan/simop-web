@@ -13,10 +13,4 @@ export const programRoutes: RouteRecordRaw[] = [
     component: () => import('./pages/ProgramDetailPage.vue'),
     meta: { requiresAuth: true, permission: 'programs:read' },
   },
-  {
-    path: 'activities',
-    name: 'activities',
-    component: () => import('./pages/ActivitiesPage.vue'),
-    meta: { requiresAuth: true, permission: 'programs:read' },
-  },
 ]

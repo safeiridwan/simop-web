@@ -20,7 +20,7 @@ export interface Budget {
   organization_unit_id: string
   program_id: string | null
   fund_id: string | null
-  account_id: string
+  account_id: string | null
   fiscal_year: number
   budget_amount: number
   status: string
@@ -82,6 +82,15 @@ export interface Receipt {
   receipt_date: string | null
   verified_at: string | null
   created_at: string
+}
+
+export interface PaguSummary {
+  organization_unit_id: string
+  organization_unit_name: string
+  pagu: number
+  committed: number
+  realized: number
+  remaining: number
 }
 
 export interface PageMeta {

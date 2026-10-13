@@ -1,5 +1,5 @@
 import { apiGet, apiGetPage, apiPatch, apiPost } from '@/services/http'
-import type { Account, Budget, Fund, Journal, JournalDetail, PageMeta, Receipt, Reimbursement } from './types'
+import type { Account, Budget, Fund, Journal, JournalDetail, PaguSummary, PageMeta, Receipt, Reimbursement } from './types'
 
 export interface JournalLineInput {
   account_id: string
@@ -31,9 +31,12 @@ export const financeApi = {
     if (query.status) params.set('status', query.status)
     return apiGetPage<Budget[], PageMeta>(`/api/v1/finance/budgets?${params.toString()}`)
   },
-  createBudget: (input: { organization_unit_id: string; account_id: string; fiscal_year: number; budget_amount: number; program_id?: string }) =>
+  createBudget: (input: { organization_unit_id: string; account_id?: string; fiscal_year: number; budget_amount: number; program_id?: string }) =>
     apiPost<Budget>('/api/v1/finance/budgets', input),
   transitionBudget: (id: string, action: string) => apiPost<Budget>(`/api/v1/finance/budgets/${id}/${action}`),
+
+  listPagu: (fiscalYear?: number) =>
+    apiGet<PaguSummary[]>(`/api/v1/finance/pagu${fiscalYear ? `?fiscal_year=${fiscalYear}` : ''}`),
 
   listJournals: (query: { status?: string; search?: string; page?: number; pageSize?: number } = {}) => {
     const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 10) })

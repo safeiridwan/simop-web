@@ -20,7 +20,7 @@ const statusFilter = ref('')
 const page = ref(1)
 const pageSize = ref(10)
 
-const form = reactive({ organization_unit_id: '', name: '', objective: '', start_date: '', end_date: '' })
+const form = reactive({ organization_unit_id: '', name: '', objective: '', start_date: '', end_date: '', requested_amount: '' })
 
 async function load() {
   loading.value = true
@@ -68,6 +68,7 @@ async function submit() {
       objective: form.objective || undefined,
       start_date: form.start_date || undefined,
       end_date: form.end_date || undefined,
+      requested_amount: form.requested_amount ? Number(form.requested_amount) : undefined,
     })
     showForm.value = false
     form.organization_unit_id = ''
@@ -75,6 +76,7 @@ async function submit() {
     form.objective = ''
     form.start_date = ''
     form.end_date = ''
+    form.requested_amount = ''
     await load()
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal menyimpan program'
@@ -119,6 +121,10 @@ async function submit() {
       <div>
         <label class="block text-sm font-medium text-slate-700" for="p-end">Selesai</label>
         <input id="p-end" v-model="form.end_date" type="date" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700" for="p-amount">Jumlah diajukan</label>
+        <input id="p-amount" v-model="form.requested_amount" type="number" step="0.01" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
       </div>
       <button type="button" :disabled="submitting" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 sm:col-span-2 sm:w-fit" @click="submit">
         {{ submitting ? 'Menyimpan...' : 'Simpan' }}

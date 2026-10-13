@@ -66,11 +66,13 @@ src/
   `/cadre-training` and `/cadre-training/:id` (batches, participants, sessions,
   attendance, assessments, certificates) via `BatchPanel.vue`.
 - `programs` (Phase 6): `/programs` list/create, `/programs/:id` detail with
-  workflow actions, targets, indicators, reports and activities (via
-  `ActivityPanel.vue`), plus `/activities` list.
+  workflow actions, proposal upload, a target list with planned/actual values,
+  and reports/LPJ (shown once the program is `COMPLETED`). ADR-026 merged the
+  former Activity entity into Program and dropped participation/indicators.
 - `finance` (Phase 7): `/finance/accounts`, `/finance/funds`,
-  `/finance/budgets`, `/finance/journals` (+ detail), `/finance/reimbursements`.
-  The journal form computes live debit/credit totals and flags imbalance.
+  `/finance/budgets`, `/finance/pagu` (per-bidang pagu/committed/realized/sisa),
+  `/finance/journals` (+ detail), `/finance/reimbursements`. The journal form
+  computes live debit/credit totals and flags imbalance.
 - `documents` (Phase 8): `/documents` list/create with file upload,
   `/documents/:id` detail with versions, downloads, and access grants.
 - `governance` (Phase 9): `/meetings` list/create, `/meetings/:id` detail with

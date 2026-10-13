@@ -36,10 +36,7 @@ const navGroups: NavGroup[] = [
   },
   {
     label: 'Program',
-    items: [
-      { label: 'Semua Program', to: '/programs', permission: 'programs:read' },
-      { label: 'Kegiatan', to: '/activities', permission: 'programs:read' },
-    ],
+    items: [{ label: 'Semua Program', to: '/programs', permission: 'programs:read' }],
   },
   {
     label: 'Keuangan',
@@ -48,6 +45,7 @@ const navGroups: NavGroup[] = [
       { label: 'Akun', to: '/finance/accounts', permission: 'finance:read' },
       { label: 'Dana', to: '/finance/funds', permission: 'finance:read' },
       { label: 'Anggaran', to: '/finance/budgets', permission: 'finance:read' },
+      { label: 'Pagu Bidang', to: '/finance/pagu', permission: 'finance:read' },
       { label: 'SPJ', to: '/finance/reimbursements', permission: 'finance:read' },
       { label: 'Laporan Keuangan', to: '/finance/reports', permission: 'reports:read' },
     ],
