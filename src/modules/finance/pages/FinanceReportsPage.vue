@@ -15,6 +15,20 @@ const from = ref('')
 const to = ref('')
 const isDated = computed(() => DATED_REPORT_KEYS.has(activeKey.value))
 
+// Indonesian column labels for the Buku Jurnal report (finance). Other tabs
+// keep the raw dataset column names.
+const FINANCE_COLUMN_LABELS: Record<string, string> = {
+  journal_number: 'Nomor Jurnal',
+  transaction_date: 'Waktu Transaksi',
+  description: 'Keterangan',
+  status: 'Status',
+  total_debit: 'Total Debit',
+}
+
+const columnLabels = computed(() =>
+  activeKey.value === 'finance' ? dataset.value?.columns.map((c) => FINANCE_COLUMN_LABELS[c] ?? c) ?? [] : dataset.value?.columns ?? [],
+)
+
 function currentQuery() {
   return { from: from.value, to: to.value }
 }
@@ -106,7 +120,7 @@ function labelFor(key: string): string {
       <table class="w-full border-collapse text-sm">
         <thead>
           <tr class="border-b border-slate-200 text-left text-slate-500">
-            <th v-for="col in dataset.columns" :key="col" class="whitespace-nowrap p-3">{{ col }}</th>
+            <th v-for="(col, i) in columnLabels" :key="i" class="whitespace-nowrap p-3">{{ col }}</th>
           </tr>
         </thead>
         <tbody>

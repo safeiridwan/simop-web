@@ -70,17 +70,20 @@ export interface PageMeta {
 export const PROGRAM_STATUSES: { value: string; label: string }[] = [
   { value: 'DRAFT', label: 'Draf' },
   { value: 'PROPOSED', label: 'Diajukan' },
+  { value: 'REVISED', label: 'Direvisi' },
   { value: 'APPROVED', label: 'Disetujui' },
-  { value: 'RUNNING', label: 'Berjalan' },
   { value: 'COMPLETED', label: 'Selesai' },
   { value: 'CANCELLED', label: 'Dibatalkan' },
 ]
 
 export const PROGRAM_TRANSITIONS: Record<string, { action: string; label: string; permission: string }[]> = {
   DRAFT: [{ action: 'submit', label: 'Ajukan', permission: 'programs:update' }],
-  PROPOSED: [{ action: 'approve', label: 'Setujui', permission: 'programs:approve' }],
-  APPROVED: [{ action: 'start', label: 'Mulai', permission: 'programs:update' }],
-  RUNNING: [{ action: 'complete', label: 'Selesaikan', permission: 'programs:update' }],
+  PROPOSED: [
+    { action: 'revise', label: 'Direvisi', permission: 'programs:approve' },
+    { action: 'approve', label: 'Setujui', permission: 'programs:approve' },
+  ],
+  REVISED: [{ action: 'submit', label: 'Ajukan', permission: 'programs:update' }],
+  APPROVED: [{ action: 'complete', label: 'Selesaikan', permission: 'programs:update' }],
 }
 
 export function programStatusLabel(status: string): string {
@@ -92,9 +95,23 @@ export function programBudget(program: Program): number | null {
   return program.approved_amount ?? program.requested_amount
 }
 
-/** Statuses in which Proposal/LPJ sections are locked to super admins. */
-export const LOCKED_SECTION_STATUSES = ['APPROVED', 'RUNNING', 'COMPLETED']
+/** Truncate a filename to a maximum length, appending an ellipsis. */
+export function truncateFilename(name: string | null, max = 50): string {
+  if (!name) return ''
+  return name.length > max ? `${name.slice(0, max)}...` : name
+}
 
-export function isSectionLocked(status: string): boolean {
-  return LOCKED_SECTION_STATUSES.includes(status)
+/** Whether the Proposal section is editable for the actor, by status. */
+export function canEditProposal(status: string, isSuperAdmin: boolean): boolean {
+  return isSuperAdmin || status === 'DRAFT' || status === 'REVISED'
+}
+
+/** Whether the LPJ section is editable for the actor, by status. */
+export function canEditLpj(status: string, isSuperAdmin: boolean): boolean {
+  return isSuperAdmin || status === 'APPROVED'
+}
+
+/** Whether the LPJ section is shown for the status (approved onward). */
+export function lpjVisible(status: string): boolean {
+  return status === 'APPROVED' || status === 'COMPLETED'
 }

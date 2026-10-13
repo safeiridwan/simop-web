@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
+import AppModal from '@/components/AppModal.vue'
 import Pagination from '@/components/Pagination.vue'
-import { downloadFile } from '@/services/http'
+import { downloadFile, HttpError } from '@/services/http'
+import { financeApi } from '@/modules/finance/api'
 import { organizationApi } from '@/modules/organization/api'
 import type { Unit } from '@/modules/organization/types'
 import { programsApi } from '../api'
-import { PROGRAM_STATUSES, programBudget, programStatusLabel, type PageMeta, type Program } from '../types'
+import { PROGRAM_STATUSES, programBudget, programStatusLabel, truncateFilename, type PageMeta, type Program } from '../types'
 
 const programs = ref<Program[]>([])
 const meta = ref<PageMeta | null>(null)
@@ -21,10 +23,18 @@ const statusFilter = ref('')
 const page = ref(1)
 const pageSize = ref(10)
 
+const modalMessage = ref('')
+const modalTitle = ref('Pemberitahuan')
+
 const form = reactive({ organization_unit_id: '', name: '', objective: '', start_date: '', end_date: '' })
 
 function money(v: number | null): string {
   return v == null ? '—' : v.toLocaleString('id-ID')
+}
+
+function notify(message: string, title = 'Pemberitahuan') {
+  modalMessage.value = message
+  modalTitle.value = title
 }
 
 async function load() {
@@ -63,26 +73,67 @@ function onPageSizeChange(size: number) {
   void load()
 }
 
+function resetForm() {
+  form.organization_unit_id = ''
+  form.name = ''
+  form.objective = ''
+  form.start_date = ''
+  form.end_date = ''
+}
+
+function validateForm(): string | null {
+  const missing: string[] = []
+  if (!form.organization_unit_id) missing.push('Unit Organisasi')
+  if (!form.name.trim()) missing.push('Nama')
+  if (!form.objective.trim()) missing.push('Tujuan')
+  if (!form.start_date) missing.push('Tanggal Mulai')
+  if (!form.end_date) missing.push('Tanggal Selesai')
+  if (missing.length > 0) {
+    return `Field berikut wajib diisi: ${missing.join(', ')}.`
+  }
+  if (form.start_date > form.end_date) {
+    return 'Tanggal mulai tidak boleh lebih besar dari tanggal selesai.'
+  }
+  return null
+}
+
+async function unitHasBudget(unitId: string): Promise<boolean> {
+  try {
+    const year = new Date(form.start_date).getFullYear()
+    const rows = await financeApi.listPagu(year)
+    return rows.some((r) => r.organization_unit_id === unitId && r.pagu > 0)
+  } catch {
+    // If the user cannot read the anggaran summary, defer to the backend check
+    // (which returns a friendly UNIT_NO_BUDGET error) rather than blocking here.
+    return true
+  }
+}
+
 async function submit() {
+  const validation = validateForm()
+  if (validation) {
+    notify(validation, 'Data Belum Lengkap')
+    return
+  }
   submitting.value = true
   error.value = null
   try {
+    if (!(await unitHasBudget(form.organization_unit_id))) {
+      notify('Program tidak dapat dibuat karena anggaran untuk unit ini belum ditetapkan. Silakan atur anggaran terlebih dahulu di menu Keuangan > Anggaran.', 'Anggaran Belum Ditetapkan')
+      return
+    }
     await programsApi.create({
       organization_unit_id: form.organization_unit_id,
       name: form.name,
-      objective: form.objective || undefined,
-      start_date: form.start_date || undefined,
-      end_date: form.end_date || undefined,
+      objective: form.objective,
+      start_date: form.start_date,
+      end_date: form.end_date,
     })
     showForm.value = false
-    form.organization_unit_id = ''
-    form.name = ''
-    form.objective = ''
-    form.start_date = ''
-    form.end_date = ''
+    resetForm()
     await load()
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Gagal menyimpan program'
+    notify(err instanceof Error ? err.message : 'Gagal menyimpan program', 'Gagal Menyimpan')
   } finally {
     submitting.value = false
   }
@@ -91,8 +142,8 @@ async function submit() {
 async function download(fileId: string, filename: string) {
   try {
     await downloadFile(`/api/v1/files/${fileId}`, filename)
-  } catch {
-    error.value = 'Gagal mengunduh berkas'
+  } catch (err) {
+    notify(err instanceof HttpError ? err.message : 'Gagal mengunduh berkas', 'Gagal Mengunduh')
   }
 }
 </script>
@@ -123,15 +174,15 @@ async function download(fileId: string, filename: string) {
       </div>
       <div class="sm:col-span-2">
         <label class="block text-sm font-medium text-slate-700" for="p-obj">Tujuan</label>
-        <input id="p-obj" v-model="form.objective" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+        <input id="p-obj" v-model="form.objective" required class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
       </div>
       <div>
         <label class="block text-sm font-medium text-slate-700" for="p-start">Mulai</label>
-        <input id="p-start" v-model="form.start_date" type="date" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+        <input id="p-start" v-model="form.start_date" type="date" required class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
       </div>
       <div>
         <label class="block text-sm font-medium text-slate-700" for="p-end">Selesai</label>
-        <input id="p-end" v-model="form.end_date" type="date" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+        <input id="p-end" v-model="form.end_date" type="date" required class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
       </div>
       <button type="button" :disabled="submitting" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 sm:col-span-2 sm:w-fit" @click="submit">
         {{ submitting ? 'Menyimpan...' : 'Simpan' }}
@@ -177,9 +228,10 @@ async function download(fileId: string, filename: string) {
                 v-if="p.proposal_file_id && p.proposal_file_name"
                 type="button"
                 class="text-brand-600 hover:underline"
+                :title="p.proposal_file_name"
                 @click="download(p.proposal_file_id, p.proposal_file_name)"
               >
-                {{ p.proposal_file_name }}
+                {{ truncateFilename(p.proposal_file_name) }}
               </button>
               <span v-else class="text-slate-400">—</span>
             </td>
@@ -189,9 +241,10 @@ async function download(fileId: string, filename: string) {
                 v-if="p.lpj_file_id && p.lpj_file_name"
                 type="button"
                 class="text-brand-600 hover:underline"
+                :title="p.lpj_file_name"
                 @click="download(p.lpj_file_id, p.lpj_file_name)"
               >
-                {{ p.lpj_file_name }}
+                {{ truncateFilename(p.lpj_file_name) }}
               </button>
               <span v-else class="text-slate-400">—</span>
             </td>
@@ -203,5 +256,7 @@ async function download(fileId: string, filename: string) {
     </div>
 
     <Pagination :meta="meta" @change="onPageChange" @page-size-change="onPageSizeChange" />
+
+    <AppModal :open="modalMessage !== ''" :title="modalTitle" :message="modalMessage" @close="modalMessage = ''" />
   </section>
 </template>

@@ -49,7 +49,6 @@ const form = reactive({
 })
 
 const programNames = computed(() => Object.fromEntries(programs.value.map((p) => [p.id, p.name])))
-const fundNames = computed(() => Object.fromEntries(funds.value.map((f) => [f.id, f.name])))
 const formPrograms = computed(() =>
   form.organization_unit_id
     ? programs.value.filter((p) => p.organization_unit_id === form.organization_unit_id)
@@ -266,7 +265,6 @@ function transitionJournal(id: string, action: string) {
             <th class="py-2 pr-4">Tanggal</th>
             <th class="py-2 pr-4">Catatan</th>
             <th class="py-2 pr-4">Program</th>
-            <th class="py-2 pr-4">Dana</th>
             <th class="py-2 pr-4 text-right">Jumlah</th>
             <th class="py-2 pr-4">Status</th>
             <th class="py-2"></th>
@@ -280,7 +278,6 @@ function transitionJournal(id: string, action: string) {
             <td class="py-2 pr-4 text-slate-600">{{ j.transaction_date || '—' }}</td>
             <td class="py-2 pr-4 text-slate-900">{{ j.description || '—' }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ j.program_id ? programNames[j.program_id] ?? '—' : '—' }}</td>
-            <td class="py-2 pr-4 text-slate-600">{{ j.fund_id ? fundNames[j.fund_id] ?? '—' : '—' }}</td>
             <td class="py-2 pr-4 text-right text-slate-700">{{ j.total_debit.toLocaleString('id-ID') }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ j.status }}</td>
             <td class="py-2">
