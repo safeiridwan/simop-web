@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 
 import Pagination from '@/components/Pagination.vue'
+import FileDropzone from '@/components/FileDropzone.vue'
 import { useAuthStore } from '@/app/stores/auth'
 import { documentsApi } from '@/modules/documents/api'
 import { financeApi } from '../api'
@@ -105,10 +106,6 @@ function onPageSizeChange(size: number) {
   void load()
 }
 
-function onProofFile(event: Event) {
-  proofFile.value = (event.target as HTMLInputElement).files?.[0] ?? null
-}
-
 function addLine() {
   form.lines.push({ account_id: '', debit: 0, credit: 0 })
 }
@@ -210,11 +207,11 @@ function transitionJournal(id: string, action: string) {
         <input v-model="form.description" placeholder="Catatan" class="rounded border border-slate-300 px-3 py-2 text-sm sm:col-span-2" />
       </div>
 
-      <div class="mt-3 grid gap-2 sm:grid-cols-2">
-        <label class="flex flex-col text-sm text-slate-600">
-          Bukti transaksi (jpg/png/pdf)
-          <input type="file" accept="image/jpeg,image/png,application/pdf" class="mt-1 text-sm" @change="onProofFile" />
-        </label>
+      <div class="mt-3">
+        <label class="block text-sm font-medium text-slate-600">Bukti transaksi</label>
+        <div class="mt-1">
+          <FileDropzone :disabled="saving" @update:file="proofFile = $event" />
+        </div>
       </div>
 
       <div class="mt-4 space-y-2">
