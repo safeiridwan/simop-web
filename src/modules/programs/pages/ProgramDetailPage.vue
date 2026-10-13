@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
+import AppModal from '@/components/AppModal.vue'
 import { useAuthStore } from '@/app/stores/auth'
+import { downloadFile } from '@/services/http'
 import { programsApi } from '../api'
-import { PROGRAM_TRANSITIONS, programStatusLabel, type ProgramTarget, type ProgramDetail } from '../types'
+import { isSectionLocked, PROGRAM_TRANSITIONS, programStatusLabel, type ProgramDetail } from '../types'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -14,18 +16,16 @@ const detail = ref<ProgramDetail | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const saving = ref(false)
+const modalMessage = ref('')
+const proposalAmount = ref('')
+const lpjAmount = ref('')
 
-const targetForm = reactive({ target_name: '', target_value: '', unit: '' })
-const reportForm = reactive({ title: '', summary: '', actual_amount: '' })
-const actualEdits = reactive<Record<string, string>>({})
+const status = computed(() => detail.value?.program.status ?? '')
+const canEditSections = computed(() => !isSectionLocked(status.value) || auth.isSuperAdmin)
 
 function transitions() {
   if (!detail.value) return []
   return PROGRAM_TRANSITIONS[detail.value.program.status] ?? []
-}
-
-function isCompleted() {
-  return detail.value?.program.status === 'COMPLETED'
 }
 
 async function load() {
@@ -33,9 +33,8 @@ async function load() {
   error.value = null
   try {
     detail.value = await programsApi.get(id)
-    for (const t of detail.value.targets) {
-      actualEdits[t.id] = t.actual_value != null ? String(t.actual_value) : ''
-    }
+    proposalAmount.value = detail.value.program.requested_amount != null ? String(detail.value.program.requested_amount) : ''
+    lpjAmount.value = detail.value.program.actual_amount != null ? String(detail.value.program.actual_amount) : ''
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat program'
   } finally {
@@ -52,7 +51,7 @@ async function run(fn: () => Promise<unknown>) {
     await fn()
     await load()
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Operasi gagal'
+    modalMessage.value = err instanceof Error ? err.message : 'Operasi gagal'
   } finally {
     saving.value = false
   }
@@ -62,36 +61,8 @@ function transition(action: string) {
   void run(() => programsApi.transition(id, action))
 }
 
-function addTarget() {
-  void run(async () => {
-    await programsApi.addTarget(id, {
-      target_name: targetForm.target_name,
-      target_value: targetForm.target_value ? Number(targetForm.target_value) : undefined,
-      unit: targetForm.unit || undefined,
-    })
-    targetForm.target_name = ''
-    targetForm.target_value = ''
-    targetForm.unit = ''
-  })
-}
-
-function saveActual(target: ProgramTarget) {
-  const raw = actualEdits[target.id]
-  const value = raw === '' ? undefined : Number(raw)
-  void run(() => programsApi.updateTargetActual(id, target.id, value))
-}
-
-function addReport() {
-  void run(async () => {
-    await programsApi.addReport(id, {
-      title: reportForm.title,
-      summary: reportForm.summary || undefined,
-      actual_amount: reportForm.actual_amount ? Number(reportForm.actual_amount) : undefined,
-    })
-    reportForm.title = ''
-    reportForm.summary = ''
-    reportForm.actual_amount = ''
-  })
+function numberOrNull(value: string): number | null {
+  return value === '' ? null : Number(value)
 }
 
 function uploadProposal(event: Event) {
@@ -99,8 +70,21 @@ function uploadProposal(event: Event) {
   if (!file) return
   void run(async () => {
     const uploaded = await programsApi.uploadFile(id, file)
-    await programsApi.update(id, { proposal_file_id: uploaded.file_id })
+    await programsApi.setProposal(id, { proposal_file_id: uploaded.file_id, requested_amount: numberOrNull(proposalAmount.value) })
   })
+}
+
+function saveProposal() {
+  void run(() =>
+    programsApi.setProposal(id, {
+      proposal_file_id: detail.value?.program.proposal_file_id ?? null,
+      requested_amount: numberOrNull(proposalAmount.value),
+    }),
+  )
+}
+
+function removeProposal() {
+  void run(() => programsApi.setProposal(id, { proposal_file_id: null, requested_amount: numberOrNull(proposalAmount.value) }))
 }
 
 function uploadLpj(event: Event) {
@@ -108,12 +92,29 @@ function uploadLpj(event: Event) {
   if (!file) return
   void run(async () => {
     const uploaded = await programsApi.uploadFile(id, file)
-    await programsApi.addReport(id, { title: `LPJ ${file.name}`, file_id: uploaded.file_id })
+    await programsApi.setLpj(id, { lpj_file_id: uploaded.file_id, actual_amount: numberOrNull(lpjAmount.value) })
   })
 }
 
-function removeTarget(targetId: string) {
-  void run(() => programsApi.deleteTarget(id, targetId))
+function saveLpj() {
+  void run(() =>
+    programsApi.setLpj(id, {
+      lpj_file_id: detail.value?.program.lpj_file_id ?? null,
+      actual_amount: numberOrNull(lpjAmount.value),
+    }),
+  )
+}
+
+function removeLpj() {
+  void run(() => programsApi.setLpj(id, { lpj_file_id: null, actual_amount: numberOrNull(lpjAmount.value) }))
+}
+
+async function download(fileId: string, filename: string) {
+  try {
+    await downloadFile(`/api/v1/files/${fileId}`, filename)
+  } catch {
+    modalMessage.value = 'Gagal mengunduh berkas'
+  }
 }
 </script>
 
@@ -126,20 +127,7 @@ function removeTarget(targetId: string) {
       <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <router-link to="/programs" class="text-sm text-brand-600 hover:underline">← Program</router-link>
-          <h1 class="text-xl font-semibold text-slate-900">{{ detail.program.name }}</h1>
-          <p class="font-mono text-xs text-slate-500">{{ detail.program.program_code }} · {{ detail.program.organization_unit_name }}</p>
           <p class="mt-1 text-sm text-slate-600">Status: <strong>{{ programStatusLabel(detail.program.status) }}</strong></p>
-          <p class="text-sm text-slate-600">
-            Kegiatan: {{ detail.program.activity_date ?? '—' }} · {{ detail.program.location ?? '—' }}
-          </p>
-          <p class="text-sm text-slate-600">
-            Diajukan: {{ detail.program.requested_amount ?? '—' }} · Disetujui: {{ detail.program.approved_amount ?? '—' }}
-          </p>
-          <p v-if="detail.coverage" class="text-xs text-slate-500">
-            Pagu {{ detail.coverage.fiscal_year }}: {{ detail.coverage.pagu.toLocaleString('id-ID') }} ·
-            terpakai {{ detail.coverage.committed.toLocaleString('id-ID') }} ·
-            sisa {{ detail.coverage.remaining.toLocaleString('id-ID') }}
-          </p>
         </div>
         <div class="flex flex-wrap gap-2">
           <button
@@ -167,64 +155,88 @@ function removeTarget(targetId: string) {
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="rounded-lg border border-slate-200 bg-white p-4">
           <h2 class="mb-3 font-semibold text-slate-900">Proposal</h2>
-          <p class="mb-2 text-sm text-slate-600">
-            <a v-if="detail.program.proposal_file_id" class="text-brand-600 hover:underline" :href="`/api/v1/files/${detail.program.proposal_file_id}`" target="_blank" rel="noopener">Lihat berkas proposal</a>
+          <p class="mb-3 text-sm text-slate-600">
+            <button
+              v-if="detail.program.proposal_file_id && detail.program.proposal_file_name"
+              type="button"
+              class="text-brand-600 hover:underline"
+              @click="download(detail.program.proposal_file_id, detail.program.proposal_file_name)"
+            >
+              {{ detail.program.proposal_file_name }}
+            </button>
             <span v-else class="text-slate-500">Belum ada berkas proposal.</span>
           </p>
-          <input type="file" :disabled="saving" class="text-sm" @change="uploadProposal" />
+          <label class="block text-sm font-medium text-slate-700" for="prop-amount">Total Komitmen Anggaran Diajukan</label>
+          <input
+            id="prop-amount"
+            v-model="proposalAmount"
+            type="number"
+            step="0.01"
+            :disabled="saving || !canEditSections"
+            class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"
+          />
+          <div class="mt-3 flex flex-wrap items-center gap-3">
+            <input type="file" :disabled="saving || !canEditSections" class="text-sm" @change="uploadProposal" />
+            <button type="button" :disabled="saving || !canEditSections" class="text-sm text-brand-600 hover:underline disabled:opacity-50" @click="saveProposal">
+              Simpan
+            </button>
+            <button
+              v-if="detail.program.proposal_file_id"
+              type="button"
+              :disabled="saving || !canEditSections"
+              class="text-sm text-red-600 hover:underline disabled:opacity-50"
+              @click="removeProposal"
+            >
+              Hapus Berkas
+            </button>
+          </div>
         </div>
 
         <div class="rounded-lg border border-slate-200 bg-white p-4">
-          <h2 class="mb-3 font-semibold text-slate-900">Target &amp; Aktual</h2>
-          <ul class="mb-3 space-y-2 text-sm">
-            <li v-for="t in detail.targets" :key="t.id" class="flex flex-wrap items-center justify-between gap-2">
-              <span class="text-slate-900">{{ t.target_name }} <span class="text-xs text-slate-500">target {{ t.target_value ?? '' }} {{ t.unit ?? '' }}</span></span>
-              <span class="flex items-center gap-2">
-                <input
-                  v-model="actualEdits[t.id]"
-                  type="number"
-                  step="any"
-                  placeholder="Aktual"
-                  :disabled="saving || !isCompleted()"
-                  class="w-24 rounded border border-slate-300 px-2 py-1 text-sm disabled:bg-slate-100"
-                />
-                <button type="button" class="text-xs text-brand-600 hover:underline" :disabled="saving || !isCompleted()" @click="saveActual(t)">Simpan</button>
-                <button type="button" class="text-xs text-red-600 hover:underline" :disabled="saving" @click="removeTarget(t.id)">Hapus</button>
-              </span>
-            </li>
-            <li v-if="detail.targets.length === 0" class="text-slate-500">Belum ada target.</li>
-          </ul>
-          <form class="grid gap-2 sm:grid-cols-3" @submit.prevent="addTarget">
-            <input v-model="targetForm.target_name" placeholder="Target" required class="rounded border border-slate-300 px-3 py-2 text-sm sm:col-span-2" />
-            <input v-model="targetForm.unit" placeholder="Satuan" class="rounded border border-slate-300 px-3 py-2 text-sm" />
-            <input v-model="targetForm.target_value" type="number" step="any" placeholder="Nilai target" class="rounded border border-slate-300 px-3 py-2 text-sm" />
-            <button type="submit" :disabled="saving" class="rounded border border-slate-300 px-3 py-2 text-sm sm:col-span-2">Tambah Target</button>
-          </form>
-          <p v-if="!isCompleted()" class="mt-2 text-xs text-slate-500">Aktual hanya dapat diisi setelah program selesai.</p>
-        </div>
-
-        <div v-if="isCompleted()" class="rounded-lg border border-slate-200 bg-white p-4">
           <h2 class="mb-3 font-semibold text-slate-900">Laporan &amp; LPJ</h2>
-          <ul class="mb-3 space-y-1 text-sm">
-            <li v-for="r in detail.reports" :key="r.id" class="text-slate-900">
-              {{ r.title }} <span class="text-xs text-slate-500">Rp {{ r.actual_amount ?? 0 }}</span>
-              <a v-if="r.file_id" class="ml-2 text-xs text-brand-600 hover:underline" :href="`/api/v1/files/${r.file_id}`" target="_blank" rel="noopener">Berkas</a>
-              <span class="block text-xs text-slate-500">{{ r.summary }}</span>
-            </li>
-            <li v-if="detail.reports.length === 0" class="text-slate-500">Belum ada laporan.</li>
-          </ul>
-          <form class="grid gap-2" @submit.prevent="addReport">
-            <input v-model="reportForm.title" placeholder="Judul laporan" required class="rounded border border-slate-300 px-3 py-2 text-sm" />
-            <input v-model="reportForm.summary" placeholder="Ringkasan" class="rounded border border-slate-300 px-3 py-2 text-sm" />
-            <input v-model="reportForm.actual_amount" type="number" step="any" placeholder="Realisasi anggaran" class="rounded border border-slate-300 px-3 py-2 text-sm" />
-            <button type="submit" :disabled="saving" class="rounded border border-slate-300 px-3 py-2 text-sm sm:w-fit">Tambah Laporan</button>
-          </form>
-          <div class="mt-3">
-            <label class="block text-xs font-semibold uppercase text-slate-500">Unggah LPJ</label>
-            <input type="file" :disabled="saving" class="mt-1 text-sm" @change="uploadLpj" />
+          <p class="mb-3 text-sm text-slate-600">
+            <button
+              v-if="detail.program.lpj_file_id && detail.program.lpj_file_name"
+              type="button"
+              class="text-brand-600 hover:underline"
+              @click="download(detail.program.lpj_file_id, detail.program.lpj_file_name)"
+            >
+              {{ detail.program.lpj_file_name }}
+            </button>
+            <span v-else class="text-slate-500">Belum ada berkas LPJ.</span>
+          </p>
+          <label class="block text-sm font-medium text-slate-700" for="lpj-amount">Total Realisasi Anggaran</label>
+          <input
+            id="lpj-amount"
+            v-model="lpjAmount"
+            type="number"
+            step="0.01"
+            :disabled="saving || !canEditSections"
+            class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"
+          />
+          <div class="mt-3 flex flex-wrap items-center gap-3">
+            <input type="file" :disabled="saving || !canEditSections" class="text-sm" @change="uploadLpj" />
+            <button type="button" :disabled="saving || !canEditSections" class="text-sm text-brand-600 hover:underline disabled:opacity-50" @click="saveLpj">
+              Simpan
+            </button>
+            <button
+              v-if="detail.program.lpj_file_id"
+              type="button"
+              :disabled="saving || !canEditSections"
+              class="text-sm text-red-600 hover:underline disabled:opacity-50"
+              @click="removeLpj"
+            >
+              Hapus Berkas
+            </button>
           </div>
         </div>
       </div>
+
+      <p v-if="!canEditSections" class="mt-4 text-xs text-slate-500">
+        Bagian Proposal dan LPJ terkunci setelah program disetujui. Hanya Super Admin yang dapat mengubahnya.
+      </p>
     </template>
+
+    <AppModal :open="modalMessage !== ''" :message="modalMessage" @close="modalMessage = ''" />
   </section>
 </template>

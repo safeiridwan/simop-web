@@ -2,10 +2,11 @@
 import { onMounted, reactive, ref } from 'vue'
 
 import Pagination from '@/components/Pagination.vue'
+import { downloadFile } from '@/services/http'
 import { organizationApi } from '@/modules/organization/api'
 import type { Unit } from '@/modules/organization/types'
 import { programsApi } from '../api'
-import { PROGRAM_STATUSES, programStatusLabel, type PageMeta, type Program } from '../types'
+import { PROGRAM_STATUSES, programBudget, programStatusLabel, type PageMeta, type Program } from '../types'
 
 const programs = ref<Program[]>([])
 const meta = ref<PageMeta | null>(null)
@@ -20,7 +21,11 @@ const statusFilter = ref('')
 const page = ref(1)
 const pageSize = ref(10)
 
-const form = reactive({ organization_unit_id: '', name: '', objective: '', start_date: '', end_date: '', requested_amount: '' })
+const form = reactive({ organization_unit_id: '', name: '', objective: '', start_date: '', end_date: '' })
+
+function money(v: number | null): string {
+  return v == null ? '—' : v.toLocaleString('id-ID')
+}
 
 async function load() {
   loading.value = true
@@ -68,7 +73,6 @@ async function submit() {
       objective: form.objective || undefined,
       start_date: form.start_date || undefined,
       end_date: form.end_date || undefined,
-      requested_amount: form.requested_amount ? Number(form.requested_amount) : undefined,
     })
     showForm.value = false
     form.organization_unit_id = ''
@@ -76,12 +80,19 @@ async function submit() {
     form.objective = ''
     form.start_date = ''
     form.end_date = ''
-    form.requested_amount = ''
     await load()
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal menyimpan program'
   } finally {
     submitting.value = false
+  }
+}
+
+async function download(fileId: string, filename: string) {
+  try {
+    await downloadFile(`/api/v1/files/${fileId}`, filename)
+  } catch {
+    error.value = 'Gagal mengunduh berkas'
   }
 }
 </script>
@@ -122,10 +133,6 @@ async function submit() {
         <label class="block text-sm font-medium text-slate-700" for="p-end">Selesai</label>
         <input id="p-end" v-model="form.end_date" type="date" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
       </div>
-      <div>
-        <label class="block text-sm font-medium text-slate-700" for="p-amount">Jumlah diajukan</label>
-        <input id="p-amount" v-model="form.requested_amount" type="number" step="0.01" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
-      </div>
       <button type="button" :disabled="submitting" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 sm:col-span-2 sm:w-fit" @click="submit">
         {{ submitting ? 'Menyimpan...' : 'Simpan' }}
       </button>
@@ -145,12 +152,16 @@ async function submit() {
     <p v-else-if="programs.length === 0" class="text-sm text-slate-500">Belum ada program.</p>
 
     <div v-else class="overflow-x-auto">
-      <table class="w-full min-w-[44rem] border-collapse text-sm">
+      <table class="w-full min-w-[56rem] border-collapse text-sm">
         <thead>
           <tr class="border-b border-slate-200 text-left text-slate-500">
             <th class="py-2 pr-4">Kode</th>
             <th class="py-2 pr-4">Nama</th>
             <th class="py-2 pr-4">Unit</th>
+            <th class="py-2 pr-4">Proposal</th>
+            <th class="py-2 pr-4 text-right">Anggaran</th>
+            <th class="py-2 pr-4">LPJ</th>
+            <th class="py-2 pr-4 text-right">Realisasi</th>
             <th class="py-2">Status</th>
           </tr>
         </thead>
@@ -161,6 +172,30 @@ async function submit() {
               <router-link :to="`/programs/${p.id}`" class="text-brand-600 hover:underline">{{ p.name }}</router-link>
             </td>
             <td class="py-2 pr-4 text-slate-600">{{ p.organization_unit_name }}</td>
+            <td class="py-2 pr-4">
+              <button
+                v-if="p.proposal_file_id && p.proposal_file_name"
+                type="button"
+                class="text-brand-600 hover:underline"
+                @click="download(p.proposal_file_id, p.proposal_file_name)"
+              >
+                {{ p.proposal_file_name }}
+              </button>
+              <span v-else class="text-slate-400">—</span>
+            </td>
+            <td class="py-2 pr-4 text-right text-slate-600">{{ money(programBudget(p)) }}</td>
+            <td class="py-2 pr-4">
+              <button
+                v-if="p.lpj_file_id && p.lpj_file_name"
+                type="button"
+                class="text-brand-600 hover:underline"
+                @click="download(p.lpj_file_id, p.lpj_file_name)"
+              >
+                {{ p.lpj_file_name }}
+              </button>
+              <span v-else class="text-slate-400">—</span>
+            </td>
+            <td class="py-2 pr-4 text-right text-slate-600">{{ money(p.actual_amount) }}</td>
             <td class="py-2 text-slate-600">{{ programStatusLabel(p.status) }}</td>
           </tr>
         </tbody>

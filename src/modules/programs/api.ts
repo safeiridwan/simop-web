@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiGetPage, apiPatch, apiPost, apiUpload } from '@/services/http'
+import { apiDelete, apiGet, apiGetPage, apiPatch, apiPost, apiPut, apiUpload } from '@/services/http'
 import type { PageMeta, Program, ProgramDetail, ProgramReport, ProgramTarget } from './types'
 
 export interface ListProgramsQuery {
@@ -31,6 +31,11 @@ export const programsApi = {
   }) => apiPost<Program>('/api/v1/programs', input),
   update: (id: string, input: Record<string, unknown>) => apiPatch<Program>(`/api/v1/programs/${id}`, input),
   transition: (id: string, action: string) => apiPost<Program>(`/api/v1/programs/${id}/${action}`),
+
+  setProposal: (id: string, input: { proposal_file_id?: string | null; requested_amount?: number | null }) =>
+    apiPut<Program>(`/api/v1/programs/${id}/proposal`, input),
+  setLpj: (id: string, input: { lpj_file_id?: string | null; actual_amount?: number | null }) =>
+    apiPut<Program>(`/api/v1/programs/${id}/lpj`, input),
 
   addTarget: (id: string, input: { target_name: string; target_value?: number; unit?: string }) =>
     apiPost<ProgramTarget>(`/api/v1/programs/${id}/targets`, input),

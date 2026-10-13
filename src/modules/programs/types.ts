@@ -15,6 +15,10 @@ export interface Program {
   requested_amount: number | null
   approved_amount: number | null
   proposal_file_id: string | null
+  proposal_file_name: string | null
+  lpj_file_id: string | null
+  lpj_file_name: string | null
+  actual_amount: number | null
   status: string
   approved_at: string | null
   created_at: string
@@ -81,4 +85,16 @@ export const PROGRAM_TRANSITIONS: Record<string, { action: string; label: string
 
 export function programStatusLabel(status: string): string {
   return PROGRAM_STATUSES.find((s) => s.value === status)?.label ?? status
+}
+
+/** Budget shown on the list: the approved amount, falling back to the request. */
+export function programBudget(program: Program): number | null {
+  return program.approved_amount ?? program.requested_amount
+}
+
+/** Statuses in which Proposal/LPJ sections are locked to super admins. */
+export const LOCKED_SECTION_STATUSES = ['APPROVED', 'RUNNING', 'COMPLETED']
+
+export function isSectionLocked(status: string): boolean {
+  return LOCKED_SECTION_STATUSES.includes(status)
 }

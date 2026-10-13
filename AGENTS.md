@@ -66,13 +66,15 @@ src/
   `/cadre-training` and `/cadre-training/:id` (batches, participants, sessions,
   attendance, assessments, certificates) via `BatchPanel.vue`.
 - `programs` (Phase 6): `/programs` list/create, `/programs/:id` detail with
-  workflow actions, proposal upload, a target list with planned/actual values,
-  and reports/LPJ (shown once the program is `COMPLETED`). ADR-026 merged the
-  former Activity entity into Program and dropped participation/indicators.
-- `finance` (Phase 7): `/finance/accounts`, `/finance/funds`,
-  `/finance/budgets`, `/finance/pagu` (per-bidang pagu/committed/realized/sisa),
-  `/finance/journals` (+ detail), `/finance/reimbursements`. The journal form
-  computes live debit/credit totals and flags imbalance.
+  workflow actions, an editable Proposal section (file + committed amount) and
+  LPJ section (file + realised amount), plus proposal/LPJ upload. Reaching
+  `COMPLETED` requires a complete LPJ and posts the completion journal. ADR-026
+  merged the former Activity entity into Program and dropped participation and
+  the Target & Aktual section.
+- `finance` (Phase 7): `/finance/accounts`, `/finance/anggaran` (per-unit
+  anggaran/komitmen/realisasi/sisa with a manual add form),
+  `/finance/journals` (+ detail), `/finance/reports`. The Dana, SPJ and flat
+  Anggaran menus are removed; the backend endpoints remain.
 - `documents` (Phase 8): `/documents` list/create with file upload,
   `/documents/:id` detail with versions, downloads, and access grants.
 - `governance` (Phase 9): `/meetings` list/create, `/meetings/:id` detail with
