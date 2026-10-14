@@ -1,5 +1,5 @@
-import { apiDelete, apiGet, apiGetPage, apiPatch, apiPost, apiPut, apiUpload } from '@/services/http'
-import type { PageMeta, Program, ProgramDetail, ProgramReport, ProgramTarget } from './types'
+import { apiDelete, apiGet, apiGetPage, apiPatch, apiPost, apiPut, apiUpload, downloadFile } from '@/services/http'
+import type { ImportResult, PageMeta, Program, ProgramDetail, ProgramReport, ProgramTarget } from './types'
 
 export interface ListProgramsQuery {
   search?: string
@@ -31,6 +31,15 @@ export const programsApi = {
   }) => apiPost<Program>('/api/v1/programs', input),
   update: (id: string, input: Record<string, unknown>) => apiPatch<Program>(`/api/v1/programs/${id}`, input),
   transition: (id: string, action: string) => apiPost<Program>(`/api/v1/programs/${id}/${action}`),
+  revert: (id: string, reason: string) => apiPost<Program>(`/api/v1/programs/${id}/revert`, { reason }),
+
+  importTemplate: (format: 'xlsx' | 'csv') =>
+    downloadFile(`/api/v1/programs/import/template?format=${format}`, `template-program.${format}`),
+  import: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return apiUpload<ImportResult>('/api/v1/programs/import', form)
+  },
 
   setProposal: (id: string, input: { proposal_file_id?: string | null; requested_amount?: number | null }) =>
     apiPut<Program>(`/api/v1/programs/${id}/proposal`, input),

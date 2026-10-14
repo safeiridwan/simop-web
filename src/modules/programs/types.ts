@@ -86,6 +86,18 @@ export const PROGRAM_TRANSITIONS: Record<string, { action: string; label: string
   APPROVED: [{ action: 'complete', label: 'Selesaikan', permission: 'programs:update' }],
 }
 
+/** Statuses that may be reverted (Mundurkan Status) and the button label. */
+export const PROGRAM_REVERTS: Record<string, string> = {
+  CANCELLED: 'Mundurkan Status',
+  COMPLETED: 'Kembalikan ke Disetujui',
+}
+
+export interface ImportResult {
+  created: number
+  skipped: number
+  errors: { row: number; message: string }[]
+}
+
 export function programStatusLabel(status: string): string {
   return PROGRAM_STATUSES.find((s) => s.value === status)?.label ?? status
 }

@@ -11,6 +11,7 @@ import {
   canEditLpj,
   canEditProposal,
   lpjVisible,
+  PROGRAM_REVERTS,
   PROGRAM_TRANSITIONS,
   programStatusLabel,
   type ProgramDetail,
@@ -104,6 +105,10 @@ async function run(fn: () => Promise<unknown>) {
 
 function transition(action: string) {
   void run(() => programsApi.transition(id, action))
+}
+
+function revertProgram() {
+  askConfirm('Mundurkan status program ini ke status sebelumnya?', () => run(() => programsApi.revert(id, '')))
 }
 
 function amount(value: string): number | null {
@@ -207,6 +212,15 @@ async function download(fileId: string, filename: string) {
             @click="transition('cancel')"
           >
             Batalkan
+          </button>
+          <button
+            v-if="PROGRAM_REVERTS[detail.program.status]"
+            type="button"
+            :disabled="saving || !auth.can('programs:update')"
+            class="rounded border border-slate-300 px-3 py-2 text-sm disabled:opacity-50"
+            @click="revertProgram"
+          >
+            {{ PROGRAM_REVERTS[detail.program.status] }}
           </button>
         </div>
       </header>

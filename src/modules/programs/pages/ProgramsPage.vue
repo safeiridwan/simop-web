@@ -2,13 +2,14 @@
 import { onMounted, reactive, ref } from 'vue'
 
 import AppModal from '@/components/AppModal.vue'
+import ImportPanel from '@/components/ImportPanel.vue'
 import Pagination from '@/components/Pagination.vue'
 import { downloadFile, HttpError } from '@/services/http'
 import { financeApi } from '@/modules/finance/api'
 import { organizationApi } from '@/modules/organization/api'
 import type { Unit } from '@/modules/organization/types'
 import { programsApi } from '../api'
-import { PROGRAM_STATUSES, programBudget, programStatusLabel, truncateFilename, type PageMeta, type Program } from '../types'
+import { PROGRAM_STATUSES, programBudget, programStatusLabel, truncateFilename, type ImportResult, type PageMeta, type Program } from '../types'
 
 const programs = ref<Program[]>([])
 const meta = ref<PageMeta | null>(null)
@@ -25,6 +26,11 @@ const pageSize = ref(10)
 
 const modalMessage = ref('')
 const modalTitle = ref('Pemberitahuan')
+
+const showImport = ref(false)
+const importing = ref(false)
+const importResult = ref<ImportResult | null>(null)
+const importError = ref<string | null>(null)
 
 const form = reactive({ organization_unit_id: '', name: '', objective: '', start_date: '', end_date: '' })
 
@@ -146,6 +152,20 @@ async function download(fileId: string, filename: string) {
     notify(err instanceof HttpError ? err.message : 'Gagal mengunduh berkas', 'Gagal Mengunduh')
   }
 }
+
+async function onImport(file: File) {
+  importing.value = true
+  importResult.value = null
+  importError.value = null
+  try {
+    importResult.value = await programsApi.import(file)
+    if (importResult.value.created > 0) await load()
+  } catch (err) {
+    importError.value = err instanceof Error ? err.message : 'Gagal mengimpor'
+  } finally {
+    importing.value = false
+  }
+}
 </script>
 
 <template>
@@ -155,10 +175,25 @@ async function download(fileId: string, filename: string) {
         <h1 class="text-xl font-semibold text-slate-900">Program</h1>
         <p class="text-sm text-slate-500">{{ meta?.total ?? programs.length }} program</p>
       </div>
-      <button type="button" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:w-fit" @click="showForm = !showForm">
-        {{ showForm ? 'Batal' : 'Tambah Program' }}
-      </button>
+      <div class="flex gap-2">
+        <button type="button" class="rounded border border-brand-500 px-3 py-2 text-sm font-medium text-brand-600 hover:bg-brand-50 sm:w-fit" @click="showImport = !showImport">
+          {{ showImport ? 'Tutup Impor' : 'Impor' }}
+        </button>
+        <button type="button" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:w-fit" @click="showForm = !showForm">
+          {{ showForm ? 'Batal' : 'Tambah Program' }}
+        </button>
+      </div>
     </header>
+
+    <ImportPanel
+      v-if="showImport"
+      template-path="/api/v1/programs/import/template"
+      template-filename="template-program"
+      :busy="importing"
+      :result="importResult"
+      :error="importError"
+      @import="onImport"
+    />
 
     <div v-if="showForm" class="mb-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-2">
       <div>
