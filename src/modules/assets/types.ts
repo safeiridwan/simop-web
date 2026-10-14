@@ -73,6 +73,98 @@ export interface PageMeta {
   total: number
 }
 
+export interface TransactionItem {
+  id: string
+  category_id: string
+  category_code: string
+  category_name: string
+  quantity: number
+  conditions: Record<string, number>
+}
+
+export interface AssetTransaction {
+  id: string
+  transaction_code: string
+  borrower_name: string
+  borrower_nik: string
+  borrower_phone: string
+  borrower_address: string | null
+  borrow_date: string | null
+  return_estimate_date: string | null
+  status: string
+  actual_return_date: string | null
+  borrow_photo_file_id: string | null
+  return_photo_file_id: string | null
+  first_category_code?: string
+  first_category_name?: string
+  item_count: number
+  created_at: string
+}
+
+export interface AssetTransactionDetail {
+  transaction: AssetTransaction
+  items: TransactionItem[]
+  returns: TransactionItem[]
+}
+
+export interface TransactionItemInput {
+  category_id: string
+  quantity: number
+  conditions: Record<string, number>
+}
+
+export const TRANSACTION_STATUSES = [
+  { value: 'DRAFT', label: 'Draft' },
+  { value: 'PROPOSED', label: 'Diajukan' },
+  { value: 'APPROVED', label: 'Disetujui' },
+  { value: 'COMPLETED', label: 'Selesai' },
+]
+
+export const TRANSACTION_TRANSITIONS: Record<string, { action: string; label: string }[]> = {
+  DRAFT: [{ action: 'submit', label: 'Ajukan' }],
+  PROPOSED: [{ action: 'approve', label: 'Setujui' }],
+  APPROVED: [{ action: 'complete', label: 'Selesaikan' }],
+}
+
+export function transactionStatusLabel(status: string): string {
+  return TRANSACTION_STATUSES.find((s) => s.value === status)?.label ?? status
+}
+
+/** The borrow/return header section is editable only in Draft. */
+export function canEditTransaction(status: string): boolean {
+  return status === 'DRAFT'
+}
+
+/** The return section is fillable once approved, until completion. */
+export function canEditReturn(status: string): boolean {
+  return status === 'APPROVED'
+}
+
+/** The return section is shown from approval onward. */
+export function returnVisible(status: string): boolean {
+  return status === 'APPROVED' || status === 'COMPLETED'
+}
+
+/** First category label plus "+N lainnya" for multi-line transactions. */
+export function transactionAssetsLabel(tx: AssetTransaction): string {
+  if (!tx.first_category_code) return '—'
+  const base = `${tx.first_category_code} - ${tx.first_category_name}`
+  const others = (tx.item_count ?? 1) - 1
+  return others > 0 ? `${base} +${others} lainnya` : base
+}
+
+/** Human-readable condition summary, e.g. "5 Baik, 1 Rusak ringan". */
+export function conditionSummary(conditions: Record<string, number>): string {
+  const parts = ASSET_CONDITIONS.filter((c) => (conditions[c.value] ?? 0) > 0).map(
+    (c) => `${conditions[c.value]} ${c.label}`,
+  )
+  return parts.length > 0 ? parts.join(', ') : '—'
+}
+
+export function conditionsTotal(conditions: Record<string, number>): number {
+  return Object.values(conditions).reduce((sum, v) => sum + (Number(v) || 0), 0)
+}
+
 export const ASSET_CONDITIONS = [
   { value: 'GOOD', label: 'Baik' },
   { value: 'FAIR', label: 'Cukup' },

@@ -63,7 +63,7 @@ async function addLocation() {
   <section>
     <header class="mb-6">
       <router-link to="/assets" class="text-sm text-brand-600 hover:underline">← Aset</router-link>
-      <h1 class="text-xl font-semibold text-slate-900">Kategori &amp; Lokasi</h1>
+      <h1 class="text-xl font-semibold text-slate-900">Pengaturan Aset</h1>
     </header>
 
     <p v-if="loading" class="text-sm text-slate-500">Memuat...</p>

@@ -86,9 +86,11 @@ src/
   detail with reports, investigations, evidence, hearings, decisions and
   sanctions. Restricted — only rendered for users with `ethics:read`; never on
   the dashboard.
-- `assets` (Phase 11): `/assets` list/create, `/assets/:id` detail with
-  assignment, maintenance and disposal actions, and `/assets/categories` for
-  categories/locations.
+- `assets` (Phase 11): `/assets` list/create (7 required fields + Lokasi),
+  `/assets/transactions` borrowing requests (multi-category lines with condition
+  breakdowns + photo) and `/assets/transactions/:id` detail (read-only/Edit,
+  Return section from Disetujui), plus `/assets/categories` ("Pengaturan Aset"
+  for categories/locations). The Aset group sits after Keuangan.
 - `dashboard` (Phase 12): `/dashboard` renders permission-filtered summary
   cards and grouped breakdowns.
 - `reports` (Phase 12): `/reports` tabbed report viewer with CSV export.

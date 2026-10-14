@@ -48,6 +48,14 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    label: 'Aset',
+    items: [
+      { label: 'Daftar Aset', to: '/assets', permission: 'assets:read' },
+      { label: 'Transaksi Aset', to: '/assets/transactions', permission: 'assets:read' },
+      { label: 'Pengaturan Aset', to: '/assets/categories', permission: 'assets:read' },
+    ],
+  },
+  {
     label: 'Tata Kelola',
     items: [
       { label: 'Rapat', to: '/meetings', permission: 'governance:read' },
@@ -59,13 +67,6 @@ const navGroups: NavGroup[] = [
   {
     label: 'Etik',
     items: [{ label: 'Kasus', to: '/ethics/cases', permission: 'ethics:read' }],
-  },
-  {
-    label: 'Aset',
-    items: [
-      { label: 'Daftar Aset', to: '/assets', permission: 'assets:read' },
-      { label: 'Kategori & Lokasi', to: '/assets/categories', permission: 'assets:read' },
-    ],
   },
   {
     label: 'Laporan & Data',

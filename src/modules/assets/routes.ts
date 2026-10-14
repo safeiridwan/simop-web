@@ -10,6 +10,18 @@ export const assetRoutes: RouteRecordRaw[] = [
     meta: read,
   },
   {
+    path: 'assets/transactions',
+    name: 'asset-transactions',
+    component: () => import('./pages/AssetTransactionsPage.vue'),
+    meta: read,
+  },
+  {
+    path: 'assets/transactions/:id',
+    name: 'asset-transaction-detail',
+    component: () => import('./pages/AssetTransactionDetailPage.vue'),
+    meta: read,
+  },
+  {
     path: 'assets/categories',
     name: 'asset-categories',
     component: () => import('./pages/CategoriesPage.vue'),
