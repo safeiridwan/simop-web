@@ -40,6 +40,8 @@ export interface Letter {
   content_html: string | null
   content_file_id: string | null
   file_id: string | null
+  lampiran: number
+  generated_file_id: string | null
   distribution_status: string
   tracking_number: string | null
   email_link: string | null

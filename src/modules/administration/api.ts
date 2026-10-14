@@ -25,6 +25,7 @@ export interface LetterInput {
   content_file_id?: string
   file_id?: string
   organization_unit_id?: string
+  lampiran?: number
 }
 
 export interface AgendaQuery {

@@ -10,7 +10,6 @@ import type { User } from '@/modules/users/types'
 import { correspondenceApi } from '../api'
 import {
   DISPOSITION_INSTRUCTIONS,
-  DISTRIBUTION_STATUSES,
   SIFAT_OPTIONS,
   categoryLabel,
   letterStatusLabel,
@@ -41,20 +40,17 @@ const editForm = reactive({
   summary: '',
   sifat: '',
   jenis_id: '',
+  lampiran: '0',
 })
 
 const dispoForm = reactive({ to_user_id: '', instruction: 'TINDAKLANJUTI', note: '' })
-const distForm = reactive({ status: 'PENDING', tracking_number: '', email_link: '', wa_link: '' })
 
 const letter = computed(() => detail.value?.letter ?? null)
 const isMasuk = computed(() => letter.value?.category === 'MASUK')
 const canUpdate = computed(() => auth.can('correspondence:update'))
 const canDisposition = computed(() => auth.can('correspondence:disposition'))
 const canApprove = computed(() => auth.can('correspondence:approve'))
-const canSign = computed(() => auth.can('correspondence:sign'))
 const editable = computed(() => letter.value != null && letter.value.status !== 'RELEASED')
-
-const coordination = computed(() => detail.value?.approvals.find((a) => a.stage === 'COORDINATION') ?? null)
 
 function notify(message: string, title = 'Pemberitahuan') {
   modalMessage.value = message
@@ -76,10 +72,7 @@ async function load() {
     editForm.summary = l.summary ?? ''
     editForm.sifat = l.sifat ?? 'Biasa'
     editForm.jenis_id = l.jenis_id ?? ''
-    distForm.status = l.distribution_status
-    distForm.tracking_number = l.tracking_number ?? ''
-    distForm.email_link = l.email_link ?? ''
-    distForm.wa_link = l.wa_link ?? ''
+    editForm.lampiran = String(l.lampiran ?? 0)
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat surat'
   } finally {
@@ -125,6 +118,7 @@ function saveEdit() {
       perihal: editForm.perihal,
       summary: editForm.summary || undefined,
       sifat: isMasuk.value ? editForm.sifat : undefined,
+      lampiran: !isMasuk.value ? Number(editForm.lampiran) || 0 : 0,
     })
     editing.value = false
   })
@@ -134,18 +128,14 @@ function submitLetter() {
   void run(() => correspondenceApi.submitLetter(id))
 }
 
-function approveCoordination() {
+function approveLetter() {
   void run(() => correspondenceApi.approveLetter(id))
 }
 
-function sign() {
-  void run(() => correspondenceApi.signLetter(id))
-}
-
-function reject(stage: string) {
+function rejectLetter() {
   const note = window.prompt('Alasan penolakan:')
   if (!note) return
-  void run(() => correspondenceApi.rejectLetter(id, stage, note))
+  void run(() => correspondenceApi.rejectLetter(id, 'SIGNATURE', note))
 }
 
 function addDisposition() {
@@ -168,26 +158,14 @@ function toggleDisposition(dispoId: string, status: string) {
   void run(() => correspondenceApi.setDispositionStatus(dispoId, status))
 }
 
-function saveDistribution() {
-  void run(() =>
-    correspondenceApi.distribute(id, {
-      status: distForm.status,
-      tracking_number: distForm.tracking_number || undefined,
-      email_link: distForm.email_link || undefined,
-      wa_link: distForm.wa_link || undefined,
-    }),
-  )
+function downloadGenerated() {
+  if (letter.value?.generated_file_id) {
+    void downloadFile(`/api/v1/files/${letter.value.generated_file_id}`, `${letter.value.letter_number ?? 'surat'}.docx`)
+  }
 }
 
 function download(fileId: string | null) {
   if (fileId) void downloadFile(`/api/v1/files/${fileId}`, fileId)
-}
-
-function mailto(): string {
-  return `mailto:?subject=${encodeURIComponent(letter.value?.perihal ?? '')}`
-}
-function waLink(): string {
-  return `https://wa.me/?text=${encodeURIComponent(letter.value?.perihal ?? '')}`
 }
 </script>
 
@@ -215,6 +193,7 @@ function waLink(): string {
         <div><dt class="text-slate-500">{{ isMasuk ? 'Penerima/Tujuan' : 'Tujuan Surat' }}</dt><dd class="text-slate-900">{{ letter.recipient || '—' }}</dd></div>
         <div><dt class="text-slate-500">Jenis/Klasifikasi</dt><dd class="text-slate-900">{{ letter.jenis_code || '—' }}</dd></div>
         <div v-if="isMasuk"><dt class="text-slate-500">Tingkat Sifat</dt><dd class="text-slate-900">{{ letter.sifat || '—' }}</dd></div>
+        <div v-if="!isMasuk"><dt class="text-slate-500">Lampiran</dt><dd class="text-slate-900">{{ letter.lampiran }} lembar</dd></div>
       </dl>
 
       <div class="mb-6 rounded-lg border border-slate-200 bg-white p-4">
@@ -227,13 +206,25 @@ function waLink(): string {
           <button v-if="letter.content_file_id" type="button" class="text-brand-600 hover:underline" @click="download(letter.content_file_id)">
             Unduh Draf .docx
           </button>
+          <button v-if="letter.generated_file_id" type="button" class="font-medium text-brand-600 hover:underline" @click="downloadGenerated">
+            Unduh Surat (.docx)
+          </button>
         </div>
         <div v-if="letter.content_html" class="prose mt-3 max-w-none text-sm text-slate-700" v-html="letter.content_html" />
       </div>
 
-      <div v-if="canUpdate && editable" class="mb-6 flex gap-2">
-        <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="editing = !editing">
+      <div v-if="(canUpdate && editable) || (!isMasuk && canUpdate && (letter.status === 'CREATED' || letter.status === 'REJECTED'))" class="mb-6 flex gap-2">
+        <button v-if="canUpdate && editable" type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="editing = !editing">
           {{ editing ? 'Batal' : 'Edit' }}
+        </button>
+        <button
+          v-if="!isMasuk && canUpdate && (letter.status === 'CREATED' || letter.status === 'REJECTED')"
+          type="button"
+          :disabled="saving"
+          class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+          @click="submitLetter"
+        >
+          Ajukan
         </button>
       </div>
 
@@ -248,6 +239,7 @@ function waLink(): string {
         <select v-if="isMasuk" v-model="editForm.sifat" class="rounded border border-slate-300 px-3 py-2 text-sm">
           <option v-for="s in SIFAT_OPTIONS" :key="s" :value="s">{{ s }}</option>
         </select>
+        <input v-if="!isMasuk" v-model="editForm.lampiran" type="number" min="0" step="1" placeholder="Lampiran (jumlah lembar)" class="rounded border border-slate-300 px-3 py-2 text-sm" />
         <button type="submit" :disabled="saving" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 sm:col-span-2 sm:w-fit">
           Simpan
         </button>
@@ -288,76 +280,41 @@ function waLink(): string {
         </form>
       </div>
 
-      <!-- Surat Keluar: persetujuan -->
-      <div v-if="!isMasuk" class="mb-6 rounded-lg border border-slate-200 bg-white p-4">
+      <!-- Surat Keluar: persetujuan satu tahap -->
+      <div v-if="!isMasuk && letter.status === 'REQUESTED'" class="mb-6 rounded-lg border border-slate-200 bg-white p-4">
         <h2 class="mb-3 font-semibold text-slate-900">Persetujuan</h2>
-        <ul class="mb-3 space-y-2 text-sm">
-          <li v-for="a in detail.approvals" :key="a.stage" class="rounded border border-slate-100 p-2">
-            <span class="text-slate-900">{{ a.stage === 'COORDINATION' ? 'Paraf Koordinasi' : 'Tanda Tangan Pimpinan' }}</span>
-            <span class="block text-xs text-slate-500">
-              {{ a.decision === 'APPROVED' ? 'Disetujui' : a.decision === 'REJECTED' ? 'Ditolak' : 'Menunggu' }}
-              <span v-if="a.actor_name"> · {{ a.actor_name }}</span>
-              <span v-if="a.decided_at"> · {{ formatDate(a.decided_at) }}</span>
-            </span>
-            <span v-if="a.note" class="block text-xs text-slate-600">{{ a.note }}</span>
-          </li>
-        </ul>
+        <p class="mb-3 text-sm text-slate-600">Surat menunggu persetujuan. Menyetujui akan menerbitkan nomor surat dan membuat file Word otomatis.</p>
         <div class="flex flex-wrap gap-2">
           <button
-            v-if="canUpdate && (letter.status === 'CREATED' || letter.status === 'REJECTED')"
+            v-if="canApprove"
             type="button"
             :disabled="saving"
             class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
-            @click="submitLetter"
+            @click="approveLetter"
           >
-            Ajukan
+            Disetujui
           </button>
           <button
-            v-if="canApprove && letter.status === 'REQUESTED'"
+            v-if="canApprove"
             type="button"
             :disabled="saving"
-            class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
-            @click="approveCoordination"
+            class="rounded border border-red-300 px-3 py-2 text-sm text-red-600 disabled:opacity-50"
+            @click="rejectLetter"
           >
-            Setujui Paraf Koordinasi
-          </button>
-          <button
-            v-if="canSign && letter.status === 'ON_PROGRESS'"
-            type="button"
-            :disabled="saving"
-            class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
-            @click="sign"
-          >
-            Tanda Tangan &amp; Terbitkan Nomor
-          </button>
-          <button
-            v-if="canApprove && (letter.status === 'REQUESTED' || letter.status === 'ON_PROGRESS')"
-            type="button"
-            :disabled="saving"
-            class="rounded border border-red-300 px-3 py-2 text-sm text-red-600"
-            @click="reject(coordination?.decision === 'APPROVED' ? 'SIGNATURE' : 'COORDINATION')"
-          >
-            Tolak
+            Ditolak
           </button>
         </div>
       </div>
 
-      <!-- Surat Keluar: distribusi -->
+      <!-- Surat Keluar: hasil -->
       <div v-if="!isMasuk && letter.status === 'RELEASED'" class="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 class="mb-3 font-semibold text-slate-900">Distribusi &amp; Pengiriman</h2>
-        <form class="grid gap-2 sm:grid-cols-2" @submit.prevent="saveDistribution">
-          <select v-model="distForm.status" class="rounded border border-slate-300 px-3 py-2 text-sm">
-            <option v-for="s in DISTRIBUTION_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
-          </select>
-          <input v-model="distForm.tracking_number" placeholder="Resi pengiriman fisik" class="rounded border border-slate-300 px-3 py-2 text-sm" />
-          <input v-model="distForm.email_link" placeholder="Tautan email" class="rounded border border-slate-300 px-3 py-2 text-sm" />
-          <input v-model="distForm.wa_link" placeholder="Tautan WhatsApp" class="rounded border border-slate-300 px-3 py-2 text-sm" />
-          <button v-if="canUpdate" type="submit" :disabled="saving" class="rounded border border-slate-300 px-3 py-2 text-sm sm:w-fit">Simpan Distribusi</button>
-        </form>
-        <div class="mt-3 flex gap-3 text-sm">
-          <a :href="mailto()" class="text-brand-600 hover:underline">Email</a>
-          <a :href="waLink()" target="_blank" rel="noopener" class="text-brand-600 hover:underline">WhatsApp</a>
-        </div>
+        <h2 class="mb-3 font-semibold text-slate-900">Surat Terbit</h2>
+        <p class="mb-3 text-sm text-slate-600">
+          Nomor surat <span class="font-mono">{{ letter.letter_number }}</span> telah diterbitkan dan file Word dibuat otomatis.
+        </p>
+        <button v-if="letter.generated_file_id" type="button" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600" @click="downloadGenerated">
+          Unduh Surat (.docx)
+        </button>
       </div>
     </template>
 

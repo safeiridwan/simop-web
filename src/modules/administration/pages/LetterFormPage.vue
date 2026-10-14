@@ -22,6 +22,7 @@ const form = reactive({
   summary: '',
   sifat: 'Biasa',
   jenis_id: '',
+  lampiran: '0',
 })
 const contentHtml = ref('')
 const editor = ref<HTMLDivElement | null>(null)
@@ -99,6 +100,7 @@ async function submit() {
       perihal: form.perihal,
       summary: form.summary || undefined,
       sifat: isMasuk.value ? form.sifat : undefined,
+      lampiran: !isMasuk.value ? Number(form.lampiran) || 0 : 0,
       content_html: !isMasuk.value && !fileId ? contentHtml.value : undefined,
       content_file_id: !isMasuk.value ? fileId : undefined,
       file_id: isMasuk.value ? fileId : undefined,
@@ -157,7 +159,11 @@ async function submit() {
           </option>
         </select>
         <input v-model="form.recipient" placeholder="Tujuan Surat" class="rounded border border-slate-300 px-3 py-2 text-sm" />
-        <input v-model="form.letter_date" type="date" class="rounded border border-slate-300 px-3 py-2 text-sm sm:col-span-2" />
+        <input v-model="form.letter_date" type="date" class="rounded border border-slate-300 px-3 py-2 text-sm" />
+        <label class="flex flex-col text-sm text-slate-600">
+          Lampiran (jumlah lembar)
+          <input v-model="form.lampiran" type="number" min="0" step="1" class="mt-1 rounded border border-slate-300 px-3 py-2 text-sm" />
+        </label>
         <input v-model="form.perihal" placeholder="Perihal" class="rounded border border-slate-300 px-3 py-2 text-sm sm:col-span-2" />
 
         <div class="sm:col-span-2">
