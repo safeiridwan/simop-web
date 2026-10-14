@@ -55,10 +55,12 @@ src/
   documents. `PersonForm.vue` is shared by create and edit.
 - Sidebar group "Keanggotaan" groups `people`, `members` (Anggota Partai),
   `cadres` (Kader), `non-party` (Non-Kader) and `cadre-training` (Pelatihan).
-- `members` (Phase 3): list/create/detail, status change, history, CSV export.
-- `non-party` (Phase 3): `/non-party` merged view of non-member affiliations
+- `members` (Phase 3): list/create/detail, status change, history, CSV export.- `non-party` (Phase 3): `/non-party` merged view of non-member affiliations
   with a search box and per-type checkboxes (sympathizer, volunteer,
   beneficiary, event/program participant, other).
+- `kaderisasi` (ADR-028): sidebar group after Keanggotaan with
+  `/kaderisasi/taklimat` (Taklimat) and `/kaderisasi/grup-pembinaan` (Grup
+  Pembinaan). Groups search participants from Kader via `cadreApi`.
 - `organization` (Phase 4): unit tree at `/organization`, unit detail at
   `/organization/units/:id` with children, positions, periods and officers.
   `TreeNode.vue` is recursive; `UnitForm.vue` is shared by create and edit.

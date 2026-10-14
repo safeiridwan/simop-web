@@ -13,6 +13,7 @@ import { ethicsRoutes } from '@/modules/ethics/routes'
 import { financeRoutes } from '@/modules/finance/routes'
 import { governanceRoutes } from '@/modules/governance/routes'
 import { healthRoutes } from '@/modules/health/routes'
+import { kaderisasiRoutes } from '@/modules/kaderisasi/routes'
 import { memberRoutes } from '@/modules/members/routes'
 import { nonPartyRoutes } from '@/modules/non-party/routes'
 import { notificationRoutes } from '@/modules/notifications/routes'
@@ -42,6 +43,7 @@ export const router = createRouter({
         ...nonPartyRoutes,
         ...organizationRoutes,
         ...cadreRoutes,
+        ...kaderisasiRoutes,
         ...programRoutes,
         ...financeRoutes,
         ...administrationRoutes,
