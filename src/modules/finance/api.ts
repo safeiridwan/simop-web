@@ -1,5 +1,5 @@
-import { apiGet, apiGetPage, apiPatch, apiPost } from '@/services/http'
-import type { Account, Budget, Fund, Journal, JournalDetail, PaguSummary, PageMeta, Receipt, Reimbursement } from './types'
+import { apiDelete, apiGet, apiGetPage, apiPatch, apiPost, apiPut, apiUpload, downloadFile } from '@/services/http'
+import type { Account, Budget, Fund, ImportResult, Journal, JournalDetail, PaguSummary, PageMeta, Receipt, Reimbursement } from './types'
 
 export interface JournalLineInput {
   account_id: string
@@ -16,10 +16,18 @@ export const financeApi = {
     const qs = params.toString()
     return apiGet<Account[]>(`/api/v1/finance/accounts${qs ? `?${qs}` : ''}`)
   },
-  createAccount: (input: { code: string; name: string; account_type: string }) =>
+  createAccount: (input: { code: string; name: string; account_type: string; description?: string }) =>
     apiPost<Account>('/api/v1/finance/accounts', input),
-  updateAccount: (id: string, input: { name: string; account_type: string; is_active: boolean }) =>
+  updateAccount: (id: string, input: { code?: string; name: string; account_type: string; is_active?: boolean; description?: string }) =>
     apiPatch<Account>(`/api/v1/finance/accounts/${id}`, input),
+  deleteAccount: (id: string) => apiDelete<{ status: string }>(`/api/v1/finance/accounts/${id}`),
+  importAccounts: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return apiUpload<ImportResult>('/api/v1/finance/accounts/import', form)
+  },
+  importAccountsTemplate: (format: 'xlsx' | 'csv') =>
+    downloadFile(`/api/v1/finance/accounts/import/template?format=${format}`, `template-akun.${format}`),
 
   listFunds: () => apiGet<Fund[]>('/api/v1/finance/funds'),
   createFund: (input: { code: string; name: string; description?: string }) =>
@@ -33,7 +41,17 @@ export const financeApi = {
   },
   createBudget: (input: { organization_unit_id: string; account_id?: string; fiscal_year: number; budget_amount: number; program_id?: string }) =>
     apiPost<Budget>('/api/v1/finance/budgets', input),
+  updateBudget: (id: string, budgetAmount: number) =>
+    apiPut<Budget>(`/api/v1/finance/budgets/${id}`, { budget_amount: budgetAmount }),
+  deleteBudget: (id: string) => apiDelete<{ status: string }>(`/api/v1/finance/budgets/${id}`),
   transitionBudget: (id: string, action: string) => apiPost<Budget>(`/api/v1/finance/budgets/${id}/${action}`),
+  importBudgets: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return apiUpload<ImportResult>('/api/v1/finance/budgets/import', form)
+  },
+  importBudgetsTemplate: (format: 'xlsx' | 'csv') =>
+    downloadFile(`/api/v1/finance/budgets/import/template?format=${format}`, `template-anggaran.${format}`),
 
   listPagu: (fiscalYear?: number) =>
     apiGet<PaguSummary[]>(`/api/v1/finance/pagu${fiscalYear ? `?fiscal_year=${fiscalYear}` : ''}`),
@@ -55,6 +73,14 @@ export const financeApi = {
     lines: JournalLineInput[]
   }) => apiPost<Journal>('/api/v1/finance/journals', input),
   transitionJournal: (id: string, action: string) => apiPost<Journal>(`/api/v1/finance/journals/${id}/${action}`),
+  revertJournal: (id: string, reason: string) => apiPost<Journal>(`/api/v1/finance/journals/${id}/revert`, { reason }),
+  importJournals: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return apiUpload<ImportResult>('/api/v1/finance/journals/import', form)
+  },
+  importJournalsTemplate: (format: 'xlsx' | 'csv') =>
+    downloadFile(`/api/v1/finance/journals/import/template?format=${format}`, `template-jurnal.${format}`),
 
   listReimbursements: (query: { status?: string; page?: number; pageSize?: number } = {}) => {
     const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 10) })

@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 
 import Pagination from '@/components/Pagination.vue'
 import FileDropzone from '@/components/FileDropzone.vue'
+import ImportPanel from '@/components/ImportPanel.vue'
 import { formatDate } from '@/utils/date'
 import { useAuthStore } from '@/app/stores/auth'
 import { documentsApi } from '@/modules/documents/api'
@@ -12,10 +13,12 @@ import { programsApi } from '@/modules/programs/api'
 import type { Program } from '@/modules/programs/types'
 import type { Unit } from '@/modules/organization/types'
 import {
+  JOURNAL_REVERTS,
   JOURNAL_STATUSES,
   JOURNAL_TRANSITIONS,
   type Account,
   type Fund,
+  type ImportResult,
   type Journal,
   type PageMeta,
 } from '../types'
@@ -31,6 +34,11 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const saving = ref(false)
 const showForm = ref(false)
+
+const showImport = ref(false)
+const importing = ref(false)
+const importResult = ref<ImportResult | null>(null)
+const importError = ref<string | null>(null)
 
 const search = ref('')
 const statusFilter = ref('')
@@ -170,6 +178,25 @@ function transitions(status: string) {
 function transitionJournal(id: string, action: string) {
   void run(() => financeApi.transitionJournal(id, action))
 }
+
+function revertJournal(id: string) {
+  const reason = window.prompt('Alasan mundurkan status (opsional):') ?? ''
+  void run(() => financeApi.revertJournal(id, reason))
+}
+
+async function onImport(file: File) {
+  importing.value = true
+  importResult.value = null
+  importError.value = null
+  try {
+    importResult.value = await financeApi.importJournals(file)
+    if (importResult.value.created > 0) await load()
+  } catch (err) {
+    importError.value = err instanceof Error ? err.message : 'Gagal mengimpor'
+  } finally {
+    importing.value = false
+  }
+}
 </script>
 
 <template>
@@ -179,10 +206,25 @@ function transitionJournal(id: string, action: string) {
         <h1 class="text-xl font-semibold text-slate-900">Jurnal</h1>
         <p class="text-sm text-slate-500">{{ meta?.total ?? journals.length }} jurnal</p>
       </div>
-      <button type="button" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:w-fit" @click="showForm = !showForm">
-        {{ showForm ? 'Batal' : 'Tambah Jurnal' }}
-      </button>
+      <div class="flex gap-2">
+        <button type="button" :disabled="!auth.can('finance:create')" class="rounded border border-brand-500 px-3 py-2 text-sm font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50 sm:w-fit" @click="showImport = !showImport">
+          {{ showImport ? 'Tutup Impor' : 'Impor' }}
+        </button>
+        <button type="button" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:w-fit" @click="showForm = !showForm">
+          {{ showForm ? 'Batal' : 'Tambah Jurnal' }}
+        </button>
+      </div>
     </header>
+
+    <ImportPanel
+      v-if="showImport"
+      template-path="/api/v1/finance/journals/import/template"
+      template-filename="template-jurnal"
+      :busy="importing"
+      :result="importResult"
+      :error="importError"
+      @import="onImport"
+    />
 
     <div v-if="showForm" class="mb-6 rounded-lg border border-slate-200 bg-white p-4">
       <div class="grid gap-3 sm:grid-cols-2">
@@ -288,6 +330,15 @@ function transitionJournal(id: string, action: string) {
                 @click="transitionJournal(j.id, t.action)"
               >
                 {{ t.label }}
+              </button>
+              <button
+                v-if="JOURNAL_REVERTS[j.status]"
+                type="button"
+                :disabled="saving || !auth.can('finance:update')"
+                class="text-xs text-slate-600 hover:underline disabled:opacity-50"
+                @click="revertJournal(j.id)"
+              >
+                {{ JOURNAL_REVERTS[j.status] }}
               </button>
             </td>
           </tr>

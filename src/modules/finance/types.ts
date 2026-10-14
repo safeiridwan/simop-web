@@ -5,6 +5,13 @@ export interface Account {
   account_type: string
   parent_id: string | null
   is_active: boolean
+  description: string | null
+}
+
+export interface ImportResult {
+  created: number
+  skipped: number
+  errors: { row: number; message: string }[]
 }
 
 export interface Fund {
@@ -138,6 +145,13 @@ export const JOURNAL_TRANSITIONS: Record<string, { action: string; label: string
   ],
   SUBMITTED: [{ action: 'approve', label: 'Setujui', permission: 'finance:approve' }],
   APPROVED: [{ action: 'post', label: 'Posting', permission: 'finance:post' }],
+}
+
+/** Journal statuses that may be reverted one step (Mundurkan Status). */
+export const JOURNAL_REVERTS: Record<string, string> = {
+  SUBMITTED: 'Mundurkan Status',
+  APPROVED: 'Mundurkan Status',
+  POSTED: 'Batalkan Posting',
 }
 
 export const REIMBURSEMENT_TRANSITIONS: Record<string, { action: string; label: string; permission: string }[]> = {
