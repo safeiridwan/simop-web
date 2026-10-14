@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import { useAuthStore } from '@/app/stores/auth'
+import { administrationRoutes } from '@/modules/administration/routes'
 import { authRoutes } from '@/modules/auth/routes'
 import { assetRoutes } from '@/modules/assets/routes'
 import { cadreRoutes } from '@/modules/cadre/routes'
@@ -43,6 +44,7 @@ export const router = createRouter({
         ...cadreRoutes,
         ...programRoutes,
         ...financeRoutes,
+        ...administrationRoutes,
         ...documentRoutes,
         ...governanceRoutes,
         ...ethicsRoutes,

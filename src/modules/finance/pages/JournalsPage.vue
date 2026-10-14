@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 
 import Pagination from '@/components/Pagination.vue'
 import FileDropzone from '@/components/FileDropzone.vue'
+import { formatDate } from '@/utils/date'
 import { useAuthStore } from '@/app/stores/auth'
 import { documentsApi } from '@/modules/documents/api'
 import { financeApi } from '../api'
@@ -272,7 +273,7 @@ function transitionJournal(id: string, action: string) {
             <td class="py-2 pr-4 font-mono text-xs text-slate-500">
               <router-link :to="`/finance/journals/${j.id}`" class="text-brand-600 hover:underline">{{ j.journal_number }}</router-link>
             </td>
-            <td class="py-2 pr-4 text-slate-600">{{ j.transaction_date || '—' }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ formatDate(j.transaction_date) }}</td>
             <td class="py-2 pr-4 text-slate-900">{{ j.description || '—' }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ j.program_id ? programNames[j.program_id] ?? '—' : '—' }}</td>
             <td class="py-2 pr-4 text-right text-slate-700">{{ j.total_debit.toLocaleString('id-ID') }}</td>

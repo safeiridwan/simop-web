@@ -56,12 +56,12 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: 'Tata Kelola',
+    label: 'Administrasi',
     items: [
-      { label: 'Rapat', to: '/meetings', permission: 'governance:read' },
-      { label: 'Tugas', to: '/tasks', permission: 'governance:read' },
-      { label: 'Surat', to: '/documents?type=SURAT', permission: 'documents:read' },
-      { label: 'Dokumen', to: '/documents', permission: 'documents:read' },
+      { label: 'Manajemen Surat', to: '/administration/letters', permission: 'correspondence:read' },
+      { label: 'Klasifikasi & Kode Surat', to: '/administration/classifications', permission: 'correspondence:read' },
+      { label: 'Buku Agenda', to: '/administration/agenda', permission: 'correspondence:read' },
+      { label: 'Notula Rapat', to: '/administration/notulae', permission: 'correspondence:read' },
     ],
   },
   {
@@ -77,7 +77,7 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: 'Administrasi',
+    label: 'Sistem',
     items: [
       { label: 'Pengguna', to: '/settings/users', permission: 'users:read' },
       { label: 'Peran', to: '/settings/roles', permission: 'roles:read' },

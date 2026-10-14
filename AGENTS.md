@@ -100,6 +100,12 @@ src/
   overview, per-check breakdown, scan, resolve/ignore and CSV export.
 - `notifications` (Phase 15): `/notifications` inbox with mark-read actions and
   `/notification-preferences` channel matrix.
+- `administration` (ADR-027): the "Administrasi" sidebar group holds
+  `/administration/letters` (Manajemen Surat), `/administration/classifications`
+  (Klasifikasi & Kode Surat), `/administration/agenda` (Buku Agenda) and
+  `/administration/notulae` (Notula Rapat). The former "Administrasi" group is
+  relabelled "Sistem"; the old Rapat/Tugas/Surat/Dokumen sidebar links are gone
+  (routes remain).
 - `security` (Phase 16): `/security/events` lists authentication/abuse signals
   (gated on `security:read`).
 

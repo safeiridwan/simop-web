@@ -5,6 +5,7 @@ import AppModal from '@/components/AppModal.vue'
 import AssetItemRows from '@/components/AssetItemRows.vue'
 import FileDropzone from '@/components/FileDropzone.vue'
 import Pagination from '@/components/Pagination.vue'
+import { formatDate } from '@/utils/date'
 import { assetsApi } from '../api'
 import {
   TRANSACTION_STATUSES,
@@ -248,8 +249,8 @@ async function submit() {
             </td>
             <td class="py-2 pr-4 text-slate-600">{{ transactionAssetsLabel(t) }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ t.borrower_nik }} - {{ t.borrower_name }}</td>
-            <td class="py-2 pr-4 text-slate-600">{{ t.borrow_date || '—' }}</td>
-            <td class="py-2 pr-4 text-slate-600">{{ t.return_estimate_date || '—' }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ formatDate(t.borrow_date) }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ formatDate(t.return_estimate_date) }}</td>
             <td class="py-2 text-slate-600">{{ transactionStatusLabel(t.status) }}</td>
           </tr>
         </tbody>

@@ -2,11 +2,10 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import PersonPicker from '@/components/PersonPicker.vue'
-import type { Person } from '@/modules/people/types'
 import { useAuthStore } from '@/app/stores/auth'
+import { formatDate } from '@/utils/date'
 import { assetsApi } from '../api'
-import { ASSET_CONDITIONS, MAINTENANCE_STATUSES, assetConditionLabel, assetStatusLabel, type AssetDetail } from '../types'
+import { ASSET_CONDITIONS, MAINTENANCE_STATUSES, assetConditionLabel, assetStatusLabel, transactionStatusLabel, type AssetDetail } from '../types'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -18,13 +17,11 @@ const error = ref<string | null>(null)
 const saving = ref(false)
 
 const conditionForm = reactive({ condition: '' })
-const selectedPerson = ref<Person | null>(null)
 const maintenanceForm = reactive({ maintenance_date: '', description: '', cost: '', status: 'DONE' })
 const disposeForm = reactive({ disposal_date: '', reason: '', method: '' })
 
 const canUpdate = computed(() => auth.can('assets:update'))
 const isDisposed = computed(() => detail.value?.asset.status === 'DISPOSED')
-const activeAssignment = computed(() => detail.value?.assignments.find((a) => !a.returned_at) ?? null)
 
 async function load() {
   loading.value = true
@@ -56,21 +53,6 @@ async function run(fn: () => Promise<unknown>) {
 
 function saveCondition() {
   void run(() => assetsApi.update(id, { condition: conditionForm.condition }))
-}
-
-function returnAsset() {
-  void run(() => assetsApi.returnAsset(id))
-}
-
-function assign() {
-  if (!selectedPerson.value) {
-    error.value = 'Pilih orang terlebih dahulu.'
-    return
-  }
-  void run(async () => {
-    await assetsApi.assign(id, selectedPerson.value!.id)
-    selectedPerson.value = null
-  })
 }
 
 function addMaintenance() {
@@ -115,7 +97,7 @@ function dispose() {
       <dl class="mb-6 grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <div><dt class="text-slate-500">Kategori</dt><dd class="text-slate-900">{{ detail.asset.category_name || '—' }}</dd></div>
         <div><dt class="text-slate-500">Kondisi</dt><dd class="text-slate-900">{{ assetConditionLabel(detail.asset.condition) }}</dd></div>
-        <div><dt class="text-slate-500">Perolehan</dt><dd class="text-slate-900">{{ detail.asset.acquisition_date || '—' }}</dd></div>
+        <div><dt class="text-slate-500">Perolehan</dt><dd class="text-slate-900">{{ formatDate(detail.asset.acquisition_date) }}</dd></div>
         <div><dt class="text-slate-500">Nilai</dt><dd class="text-slate-900">{{ detail.asset.acquisition_value ? detail.asset.acquisition_value.toLocaleString('id-ID') : '—' }}</dd></div>
       </dl>
 
@@ -128,38 +110,39 @@ function dispose() {
             </select>
             <button type="submit" :disabled="saving" class="rounded border border-slate-300 px-3 py-2 text-sm">Simpan Kondisi</button>
           </form>
-
-          <div v-if="canUpdate && !isDisposed" class="mt-4 border-t border-slate-100 pt-4">
-            <template v-if="!activeAssignment">
-              <label class="block text-sm font-medium text-slate-700">Pinjamkan ke</label>
-              <div class="mt-1 grid gap-2 sm:grid-cols-[1fr_auto]">
-                <PersonPicker v-model="selectedPerson" />
-                <button type="button" :disabled="saving" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50" @click="assign">
-                  Pinjamkan
-                </button>
-              </div>
-            </template>
-            <template v-else>
-              <p class="text-sm text-slate-600">Dipinjam oleh <strong>{{ activeAssignment.person_name || 'unit' }}</strong>.</p>
-              <button type="button" :disabled="saving" class="mt-2 rounded border border-slate-300 px-3 py-2 text-sm" @click="returnAsset">
-                Kembalikan
-              </button>
-            </template>
-          </div>
         </div>
 
         <div class="rounded-lg border border-slate-200 bg-white p-4">
           <h2 class="mb-3 font-semibold text-slate-900">Riwayat Peminjaman</h2>
-          <ul class="space-y-2 text-sm">
-            <li v-for="a in detail.assignments" :key="a.id" class="rounded border border-slate-100 p-2">
-              <span class="text-slate-900">{{ a.person_name || 'Unit' }}</span>
-              <span class="block text-xs text-slate-500">
-                {{ new Date(a.assigned_at).toLocaleDateString('id-ID') }}
-                → {{ a.returned_at ? new Date(a.returned_at).toLocaleDateString('id-ID') : 'aktif' }}
-              </span>
-            </li>
-            <li v-if="detail.assignments.length === 0" class="text-slate-500">Belum ada riwayat.</li>
-          </ul>
+          <div v-if="detail.transactions.length === 0" class="text-sm text-slate-500">Belum ada riwayat.</div>
+          <div v-else class="overflow-x-auto">
+            <table class="w-full min-w-[52rem] border-collapse text-sm">
+              <thead>
+                <tr class="border-b border-slate-200 text-left text-slate-500">
+                  <th class="py-2 pr-4">Kode Transaksi</th>
+                  <th class="py-2 pr-4">Identitas Peminjam</th>
+                  <th class="py-2 pr-4">Jumlah Unit</th>
+                  <th class="py-2 pr-4">Tanggal Pinjam</th>
+                  <th class="py-2 pr-4">Estimasi Kembali</th>
+                  <th class="py-2 pr-4">Kembali Aktual</th>
+                  <th class="py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="t in detail.transactions" :key="t.id" class="border-b border-slate-100">
+                  <td class="py-2 pr-4 font-mono text-xs text-slate-500">
+                    <router-link :to="`/assets/transactions/${t.id}`" class="text-brand-600 hover:underline">{{ t.transaction_code }}</router-link>
+                  </td>
+                  <td class="py-2 pr-4 text-slate-600">{{ t.borrower_nik }} - {{ t.borrower_name }}</td>
+                  <td class="py-2 pr-4 text-slate-600">{{ t.quantity }}</td>
+                  <td class="py-2 pr-4 text-slate-600">{{ formatDate(t.borrow_date) }}</td>
+                  <td class="py-2 pr-4 text-slate-600">{{ formatDate(t.return_estimate_date) }}</td>
+                  <td class="py-2 pr-4 text-slate-600">{{ formatDate(t.actual_return_date) }}</td>
+                  <td class="py-2 text-slate-600">{{ transactionStatusLabel(t.status) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div class="rounded-lg border border-slate-200 bg-white p-4">

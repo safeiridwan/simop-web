@@ -47,9 +47,6 @@ export const assetsApi = {
     condition?: string
   }) => apiPost<Asset>('/api/v1/assets', input),
   update: (id: string, input: Record<string, unknown>) => apiPatch<Asset>(`/api/v1/assets/${id}`, input),
-  assign: (id: string, personId: string, notes?: string) =>
-    apiPost(`/api/v1/assets/${id}/assign`, { person_id: personId, notes }),
-  returnAsset: (id: string) => apiPost(`/api/v1/assets/${id}/return`, {}),
   maintenance: (id: string, input: { maintenance_date?: string; description: string; cost?: number; status?: string }) =>
     apiPost<AssetMaintenance>(`/api/v1/assets/${id}/maintenance`, input),
   dispose: (id: string, input: { disposal_date?: string; reason?: string; method?: string }) =>

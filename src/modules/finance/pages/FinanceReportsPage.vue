@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 
 import { reportsApi } from '@/modules/reports/api'
 import type { Dataset } from '@/modules/reports/types'
+import { formatDate } from '@/utils/date'
 import { DATED_REPORT_KEYS, FINANCE_REPORT_KEYS } from '../types'
 
 const activeKey = ref(FINANCE_REPORT_KEYS[0].key)
@@ -28,6 +29,18 @@ const FINANCE_COLUMN_LABELS: Record<string, string> = {
 const columnLabels = computed(() =>
   activeKey.value === 'finance' ? dataset.value?.columns.map((c) => FINANCE_COLUMN_LABELS[c] ?? c) ?? [] : dataset.value?.columns ?? [],
 )
+
+// The finance "Waktu Transaksi" column is displayed as dd-MM-yyyy; all other
+// cells render their raw value.
+const dateColumnIndex = computed(() =>
+  activeKey.value === 'finance' ? dataset.value?.columns.indexOf('transaction_date') ?? -1 : -1,
+)
+
+function cellText(row: unknown[], index: number): unknown {
+  const cell = row[index]
+  if (index === dateColumnIndex.value) return formatDate(cell as string | null)
+  return cell ?? '—'
+}
 
 function currentQuery() {
   return { from: from.value, to: to.value }
@@ -125,7 +138,7 @@ function labelFor(key: string): string {
         </thead>
         <tbody>
           <tr v-for="(row, i) in dataset.rows" :key="i" class="border-b border-slate-100">
-            <td v-for="(cell, j) in row" :key="j" class="whitespace-nowrap p-3 text-slate-700">{{ cell ?? '—' }}</td>
+            <td v-for="(_, j) in row" :key="j" class="whitespace-nowrap p-3 text-slate-700">{{ cellText(row, j) }}</td>
           </tr>
         </tbody>
       </table>

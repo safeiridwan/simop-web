@@ -30,15 +30,16 @@ export interface Asset {
   created_at: string
 }
 
-export interface AssetAssignment {
+export interface AssetTransactionHistory {
   id: string
-  asset_id: string
-  person_id: string | null
-  person_name: string | null
-  organization_unit_id: string | null
-  assigned_at: string
-  returned_at: string | null
-  notes: string | null
+  transaction_code: string
+  borrower_nik: string
+  borrower_name: string
+  quantity: number
+  borrow_date: string | null
+  return_estimate_date: string | null
+  actual_return_date: string | null
+  status: string
 }
 
 export interface AssetMaintenance {
@@ -62,7 +63,7 @@ export interface AssetDisposal {
 
 export interface AssetDetail {
   asset: Asset
-  assignments: AssetAssignment[]
+  transactions: AssetTransactionHistory[]
   maintenance: AssetMaintenance[]
   disposals: AssetDisposal[]
 }
