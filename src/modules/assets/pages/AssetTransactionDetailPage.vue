@@ -210,6 +210,15 @@ function clearReturn() {
   askConfirm('Hapus data pengembalian aset untuk transaksi ini?', () => run(() => assetsApi.clearReturn(id)))
 }
 
+function cancelTransaction() {
+  const reason = window.prompt('Alasan pembatalan transaksi (wajib):')
+  if (!reason || !reason.trim()) {
+    notify('Alasan pembatalan wajib diisi.')
+    return
+  }
+  askConfirm('Batalkan transaksi ini? Stok aset akan kembali tersedia.', () => run(() => assetsApi.cancelTransaction(id, reason)))
+}
+
 async function download(fileId: string, filename: string) {
   try {
     await downloadFile(`/api/v1/files/${fileId}`, filename)
@@ -241,6 +250,15 @@ async function download(fileId: string, filename: string) {
             @click="transition(t.action)"
           >
             {{ t.label }}
+          </button>
+          <button
+            v-if="status === 'APPROVED'"
+            type="button"
+            :disabled="saving || !auth.can('assets:update')"
+            class="rounded border border-red-300 px-3 py-2 text-sm text-red-600 disabled:opacity-50"
+            @click="cancelTransaction"
+          >
+            Batalkan
           </button>
         </div>
       </header>

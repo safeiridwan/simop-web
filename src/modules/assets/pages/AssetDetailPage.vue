@@ -3,9 +3,20 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useAuthStore } from '@/app/stores/auth'
+import { organizationApi } from '@/modules/organization/api'
+import type { Unit } from '@/modules/organization/types'
 import { formatDate } from '@/utils/date'
 import { assetsApi } from '../api'
-import { ASSET_CONDITIONS, MAINTENANCE_STATUSES, assetConditionLabel, assetStatusLabel, transactionStatusLabel, type AssetDetail } from '../types'
+import {
+  ASSET_CONDITIONS,
+  MAINTENANCE_STATUSES,
+  assetConditionLabel,
+  assetStatusLabel,
+  transactionStatusLabel,
+  type AssetCategory,
+  type AssetDetail,
+  type AssetLocation,
+} from '../types'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -19,6 +30,20 @@ const saving = ref(false)
 const conditionForm = reactive({ condition: '' })
 const maintenanceForm = reactive({ maintenance_date: '', description: '', cost: '', status: 'DONE' })
 const disposeForm = reactive({ disposal_date: '', reason: '', method: '' })
+
+const editing = ref(false)
+const categories = ref<AssetCategory[]>([])
+const locations = ref<AssetLocation[]>([])
+const units = ref<Unit[]>([])
+const editForm = reactive({
+  name: '',
+  category_id: '',
+  location_id: '',
+  organization_unit_id: '',
+  acquisition_date: '',
+  acquisition_value: '',
+  condition: '',
+})
 
 const canUpdate = computed(() => auth.can('assets:update'))
 const isDisposed = computed(() => detail.value?.asset.status === 'DISPOSED')
@@ -36,7 +61,56 @@ async function load() {
   }
 }
 
-onMounted(load)
+onMounted(async () => {
+  await load()
+  try {
+    const [cats, locs, unitList] = await Promise.all([
+      assetsApi.categories(),
+      assetsApi.locations(),
+      organizationApi.listUnits({ pageSize: 200 }),
+    ])
+    categories.value = cats
+    locations.value = locs
+    units.value = unitList.data
+  } catch {
+    // Lookups are only needed for the edit form; ignore failures.
+  }
+})
+
+function startEdit() {
+  const a = detail.value!.asset
+  editForm.name = a.name
+  editForm.category_id = a.category_id ?? ''
+  editForm.location_id = a.location_id ?? ''
+  editForm.organization_unit_id = a.organization_unit_id ?? ''
+  editForm.acquisition_date = a.acquisition_date ?? ''
+  editForm.acquisition_value = a.acquisition_value != null ? String(a.acquisition_value) : ''
+  editForm.condition = a.condition
+  editing.value = true
+}
+
+function saveAsset() {
+  if (!editForm.name.trim()) {
+    error.value = 'Nama Aset wajib diisi.'
+    return
+  }
+  if (!editForm.acquisition_value || Number(editForm.acquisition_value) <= 0) {
+    error.value = 'Nilai Aset harus angka lebih dari 0.'
+    return
+  }
+  void run(async () => {
+    await assetsApi.update(id, {
+      name: editForm.name,
+      category_id: editForm.category_id || undefined,
+      location_id: editForm.location_id || undefined,
+      organization_unit_id: editForm.organization_unit_id || undefined,
+      acquisition_date: editForm.acquisition_date || undefined,
+      acquisition_value: Number(editForm.acquisition_value),
+      condition: editForm.condition,
+    })
+    editing.value = false
+  })
+}
 
 async function run(fn: () => Promise<unknown>) {
   saving.value = true
@@ -100,6 +174,57 @@ function dispose() {
         <div><dt class="text-slate-500">Perolehan</dt><dd class="text-slate-900">{{ formatDate(detail.asset.acquisition_date) }}</dd></div>
         <div><dt class="text-slate-500">Nilai</dt><dd class="text-slate-900">{{ detail.asset.acquisition_value ? detail.asset.acquisition_value.toLocaleString('id-ID') : '—' }}</dd></div>
       </dl>
+
+      <div v-if="canUpdate" class="mb-4">
+        <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="editing ? (editing = false) : startEdit()">
+          {{ editing ? 'Batal' : 'Edit' }}
+        </button>
+      </div>
+
+      <form v-if="editing" class="mb-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-2" @submit.prevent="saveAsset">
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-slate-700" for="e-name">Nama Aset</label>
+          <input id="e-name" v-model="editForm.name" required class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700" for="e-cat">Kategori</label>
+          <select id="e-cat" v-model="editForm.category_id" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm">
+            <option value="" disabled>Pilih kategori</option>
+            <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.code }} - {{ c.name }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700" for="e-loc">Lokasi</label>
+          <select id="e-loc" v-model="editForm.location_id" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm">
+            <option value="" disabled>Pilih lokasi</option>
+            <option v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700" for="e-unit">Unit Organisasi</label>
+          <select id="e-unit" v-model="editForm.organization_unit_id" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm">
+            <option value="" disabled>Pilih unit</option>
+            <option v-for="u in units" :key="u.id" :value="u.id">{{ u.name }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700" for="e-date">Tanggal Diperoleh</label>
+          <input id="e-date" v-model="editForm.acquisition_date" type="date" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700" for="e-value">Nilai Aset</label>
+          <input id="e-value" v-model="editForm.acquisition_value" type="number" step="0.01" min="0" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700" for="e-cond">Kondisi</label>
+          <select id="e-cond" v-model="editForm.condition" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm">
+            <option v-for="c in ASSET_CONDITIONS" :key="c.value" :value="c.value">{{ c.label }}</option>
+          </select>
+        </div>
+        <div class="flex items-end sm:col-span-2">
+          <button type="submit" :disabled="saving" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50">Simpan</button>
+        </div>
+      </form>
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="rounded-lg border border-slate-200 bg-white p-4">

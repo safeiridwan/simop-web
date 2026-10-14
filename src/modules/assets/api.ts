@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiGetPage, apiPatch, apiPost, apiPut, apiUpload } from '@/services/http'
+import { apiDelete, apiGet, apiGetPage, apiPatch, apiPost, apiPut, apiUpload, downloadFile } from '@/services/http'
 import type {
   Asset,
   AssetCategory,
@@ -8,6 +8,7 @@ import type {
   AssetMaintenance,
   AssetTransaction,
   AssetTransactionDetail,
+  ImportResult,
   PageMeta,
   TransactionItemInput,
 } from './types'
@@ -26,6 +27,13 @@ export interface TransactionInput {
 export const assetsApi = {
   categories: () => apiGet<AssetCategory[]>('/api/v1/asset-categories'),
   createCategory: (input: { code: string; name: string }) => apiPost<AssetCategory>('/api/v1/asset-categories', input),
+  importCategories: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return apiUpload<ImportResult>('/api/v1/asset-categories/import', form)
+  },
+  importCategoriesTemplate: (format: 'xlsx' | 'csv') =>
+    downloadFile(`/api/v1/asset-categories/import/template?format=${format}`, `template-kategori-aset.${format}`),
   locations: () => apiGet<AssetLocation[]>('/api/v1/asset-locations'),
   createLocation: (input: { name: string; address?: string }) => apiPost<AssetLocation>('/api/v1/asset-locations', input),
 
@@ -47,6 +55,13 @@ export const assetsApi = {
     condition?: string
   }) => apiPost<Asset>('/api/v1/assets', input),
   update: (id: string, input: Record<string, unknown>) => apiPatch<Asset>(`/api/v1/assets/${id}`, input),
+  importAssets: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return apiUpload<ImportResult>('/api/v1/assets/import', form)
+  },
+  importAssetsTemplate: (format: 'xlsx' | 'csv') =>
+    downloadFile(`/api/v1/assets/import/template?format=${format}`, `template-aset.${format}`),
   maintenance: (id: string, input: { maintenance_date?: string; description: string; cost?: number; status?: string }) =>
     apiPost<AssetMaintenance>(`/api/v1/assets/${id}/maintenance`, input),
   dispose: (id: string, input: { disposal_date?: string; reason?: string; method?: string }) =>
@@ -64,6 +79,8 @@ export const assetsApi = {
     apiPut<AssetTransaction>(`/api/v1/asset-transactions/${id}`, input),
   transitionTransaction: (id: string, action: string) =>
     apiPost<AssetTransaction>(`/api/v1/asset-transactions/${id}/${action}`),
+  cancelTransaction: (id: string, reason: string) =>
+    apiPost<AssetTransaction>(`/api/v1/asset-transactions/${id}/cancel`, { reason }),
   setReturn: (
     id: string,
     input: { actual_return_date?: string; return_photo_file_id?: string; items: TransactionItemInput[] },

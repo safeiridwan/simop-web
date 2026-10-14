@@ -96,6 +96,7 @@ export interface AssetTransaction {
   actual_return_date: string | null
   borrow_photo_file_id: string | null
   return_photo_file_id: string | null
+  cancel_reason?: string | null
   first_category_code?: string
   first_category_name?: string
   item_count: number
@@ -119,7 +120,14 @@ export const TRANSACTION_STATUSES = [
   { value: 'PROPOSED', label: 'Diajukan' },
   { value: 'APPROVED', label: 'Disetujui' },
   { value: 'COMPLETED', label: 'Selesai' },
+  { value: 'CANCELLED', label: 'Dibatalkan' },
 ]
+
+export interface ImportResult {
+  created: number
+  skipped: number
+  errors: { row: number; message: string }[]
+}
 
 export const TRANSACTION_TRANSITIONS: Record<string, { action: string; label: string }[]> = {
   DRAFT: [{ action: 'submit', label: 'Ajukan' }],

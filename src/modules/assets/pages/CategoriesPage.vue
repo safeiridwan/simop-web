@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
+import ImportPanel from '@/components/ImportPanel.vue'
 import { assetsApi } from '../api'
-import type { AssetCategory, AssetLocation } from '../types'
+import type { AssetCategory, AssetLocation, ImportResult } from '../types'
 
 const categories = ref<AssetCategory[]>([])
 const locations = ref<AssetLocation[]>([])
@@ -11,6 +12,11 @@ const error = ref<string | null>(null)
 const submitting = ref(false)
 const categoryForm = reactive({ code: '', name: '' })
 const locationForm = reactive({ name: '', address: '' })
+
+const showImport = ref(false)
+const importing = ref(false)
+const importResult = ref<ImportResult | null>(null)
+const importError = ref<string | null>(null)
 
 async function load() {
   loading.value = true
@@ -57,14 +63,43 @@ async function addLocation() {
     submitting.value = false
   }
 }
+
+async function onImport(file: File) {
+  importing.value = true
+  importResult.value = null
+  importError.value = null
+  try {
+    importResult.value = await assetsApi.importCategories(file)
+    if (importResult.value.created > 0) await load()
+  } catch (err) {
+    importError.value = err instanceof Error ? err.message : 'Gagal mengimpor'
+  } finally {
+    importing.value = false
+  }
+}
 </script>
 
 <template>
   <section>
     <header class="mb-6">
       <router-link to="/assets" class="text-sm text-brand-600 hover:underline">← Aset</router-link>
-      <h1 class="text-xl font-semibold text-slate-900">Pengaturan Aset</h1>
+      <div class="flex items-center justify-between gap-2">
+        <h1 class="text-xl font-semibold text-slate-900">Pengaturan Aset</h1>
+        <button type="button" class="rounded border border-brand-500 px-3 py-2 text-sm font-medium text-brand-600 hover:bg-brand-50" @click="showImport = !showImport">
+          {{ showImport ? 'Tutup Impor' : 'Impor Kategori' }}
+        </button>
+      </div>
     </header>
+
+    <ImportPanel
+      v-if="showImport"
+      template-path="/api/v1/asset-categories/import/template"
+      template-filename="template-kategori-aset"
+      :busy="importing"
+      :result="importResult"
+      :error="importError"
+      @import="onImport"
+    />
 
     <p v-if="loading" class="text-sm text-slate-500">Memuat...</p>
     <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>

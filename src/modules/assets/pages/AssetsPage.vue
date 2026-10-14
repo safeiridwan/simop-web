@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 
 import AppModal from '@/components/AppModal.vue'
+import ImportPanel from '@/components/ImportPanel.vue'
 import Pagination from '@/components/Pagination.vue'
 import { organizationApi } from '@/modules/organization/api'
 import type { Unit } from '@/modules/organization/types'
@@ -14,6 +15,7 @@ import {
   type Asset,
   type AssetCategory,
   type AssetLocation,
+  type ImportResult,
   type PageMeta,
 } from '../types'
 
@@ -33,6 +35,11 @@ const pageSize = ref(10)
 
 const modalMessage = ref('')
 const modalTitle = ref('Pemberitahuan')
+
+const showImport = ref(false)
+const importing = ref(false)
+const importResult = ref<ImportResult | null>(null)
+const importError = ref<string | null>(null)
 
 const blankForm = () => ({
   name: '',
@@ -135,6 +142,20 @@ async function submit() {
     submitting.value = false
   }
 }
+
+async function onImport(file: File) {
+  importing.value = true
+  importResult.value = null
+  importError.value = null
+  try {
+    importResult.value = await assetsApi.importAssets(file)
+    if (importResult.value.created > 0) await load()
+  } catch (err) {
+    importError.value = err instanceof Error ? err.message : 'Gagal mengimpor'
+  } finally {
+    importing.value = false
+  }
+}
 </script>
 
 <template>
@@ -144,10 +165,25 @@ async function submit() {
         <h1 class="text-xl font-semibold text-slate-900">Daftar Aset</h1>
         <p class="text-sm text-slate-500">{{ meta?.total ?? assets.length }} aset</p>
       </div>
-      <button type="button" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:w-fit" @click="showForm = !showForm">
-        {{ showForm ? 'Batal' : 'Tambah Aset' }}
-      </button>
+      <div class="flex gap-2">
+        <button type="button" class="rounded border border-brand-500 px-3 py-2 text-sm font-medium text-brand-600 hover:bg-brand-50 sm:w-fit" @click="showImport = !showImport">
+          {{ showImport ? 'Tutup Impor' : 'Impor' }}
+        </button>
+        <button type="button" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 sm:w-fit" @click="showForm = !showForm">
+          {{ showForm ? 'Batal' : 'Tambah Aset' }}
+        </button>
+      </div>
     </header>
+
+    <ImportPanel
+      v-if="showImport"
+      template-path="/api/v1/assets/import/template"
+      template-filename="template-aset"
+      :busy="importing"
+      :result="importResult"
+      :error="importError"
+      @import="onImport"
+    />
 
     <form v-if="showForm" class="mb-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-2" @submit.prevent="submit">
       <div class="sm:col-span-2">
