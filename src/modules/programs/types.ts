@@ -13,6 +13,7 @@ export interface Program {
   location: string | null
   person_in_charge_id: string | null
   requested_amount: number | null
+  planned_amount: number | null
   approved_amount: number | null
   proposal_file_id: string | null
   proposal_file_name: string | null
@@ -105,6 +106,16 @@ export function programStatusLabel(status: string): string {
 /** Budget shown on the list: the approved amount, falling back to the request. */
 export function programBudget(program: Program): number | null {
   return program.approved_amount ?? program.requested_amount
+}
+
+/** Format a nominal for display; empty values show a dash. */
+export function formatAmount(value: number | null | undefined): string {
+  return value == null ? '-' : value.toLocaleString('id-ID')
+}
+
+/** Whether the Rencana Anggaran is editable for the actor, by status. */
+export function canEditPlanned(status: string, isSuperAdmin: boolean): boolean {
+  return isSuperAdmin || status === 'DRAFT' || status === 'REVISED'
 }
 
 /** Truncate a filename to a maximum length, appending an ellipsis. */

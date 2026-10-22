@@ -4,7 +4,9 @@ import { useRouter } from 'vue-router'
 
 import AppModal from '@/components/AppModal.vue'
 import { kaderisasiApi } from '../api'
-import { GROUP_STATUSES, type Level } from '../types'
+import { GROUP_STATUSES, type GroupMemberRow, type Level } from '../types'
+import CadrePicker from '../components/CadrePicker.vue'
+import GroupMemberEditor from '../components/GroupMemberEditor.vue'
 
 const router = useRouter()
 const levels = ref<Level[]>([])
@@ -12,7 +14,8 @@ const submitting = ref(false)
 const error = ref<string | null>(null)
 const modalMessage = ref('')
 
-const form = reactive({ name: '', murabbi: '', level_id: '', status: 'ACTIVE' })
+const form = reactive({ name: '', murabbi_cadre_profile_id: '', level_id: '', status: 'ACTIVE' })
+const members = ref<GroupMemberRow[]>([])
 
 onMounted(async () => {
   try {
@@ -22,13 +25,29 @@ onMounted(async () => {
   }
 })
 
-async function submit() {
+function validate(): string | null {
   const missing: string[] = []
   if (!form.name.trim()) missing.push('Nama Grup')
-  if (!form.murabbi.trim()) missing.push('Murabbi')
+  if (!form.murabbi_cadre_profile_id) missing.push('Murabbi')
   if (!form.level_id) missing.push('Jenjang')
+  if (!form.status) missing.push('Status')
   if (missing.length > 0) {
-    modalMessage.value = `Field berikut wajib diisi: ${missing.join(', ')}.`
+    return `Field berikut wajib diisi: ${missing.join(', ')}.`
+  }
+  const ids = members.value.map((m) => m.cadre_profile_id).filter(Boolean)
+  if (ids.includes(form.murabbi_cadre_profile_id)) {
+    return 'Murabbi tidak boleh menjadi anggota grup yang dibinanya.'
+  }
+  if (new Set(ids).size !== ids.length) {
+    return 'Satu kader tidak boleh muncul lebih dari sekali dalam satu grup.'
+  }
+  return null
+}
+
+async function submit() {
+  const validation = validate()
+  if (validation) {
+    modalMessage.value = validation
     return
   }
   submitting.value = true
@@ -36,9 +55,10 @@ async function submit() {
   try {
     const created = await kaderisasiApi.createGroup({
       name: form.name,
-      murabbi: form.murabbi,
+      murabbi_cadre_profile_id: form.murabbi_cadre_profile_id,
       level_id: form.level_id,
       status: form.status,
+      member_ids: members.value.map((m) => m.cadre_profile_id).filter(Boolean),
     })
     await router.push(`/kaderisasi/grup-pembinaan/${created.id}`)
   } catch (err) {
@@ -58,21 +78,47 @@ async function submit() {
 
     <p v-if="error" class="mb-3 text-sm text-red-600">{{ error }}</p>
 
-    <form class="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-2" @submit.prevent="submit">
-      <input v-model="form.name" placeholder="Nama Grup" class="rounded border border-slate-300 px-3 py-2 text-sm" />
-      <input v-model="form.murabbi" placeholder="Murabbi" class="rounded border border-slate-300 px-3 py-2 text-sm" />
-      <select v-model="form.level_id" class="rounded border border-slate-300 px-3 py-2 text-sm">
-        <option value="" disabled>Jenjang</option>
-        <option v-for="l in levels" :key="l.id" :value="l.id">{{ l.name }}</option>
-      </select>
-      <select v-model="form.status" class="rounded border border-slate-300 px-3 py-2 text-sm">
-        <option v-for="s in GROUP_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
-      </select>
-      <button type="submit" :disabled="submitting" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 sm:col-span-2 sm:w-fit">
+    <form class="space-y-6" @submit.prevent="submit">
+      <div class="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 class="mb-3 font-semibold text-slate-900">Header</h2>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label class="block text-sm font-medium text-slate-700" for="g-name">Nama Grup</label>
+            <input id="g-name" v-model="form.name" required class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Murabbi</label>
+            <div class="mt-1">
+              <CadrePicker v-model="form.murabbi_cadre_profile_id" :disabled="submitting" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700" for="g-level">Jenjang</label>
+            <select id="g-level" v-model="form.level_id" required class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm">
+              <option value="" disabled>Pilih jenjang</option>
+              <option v-for="l in levels" :key="l.id" :value="l.id">{{ l.name }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700" for="g-status">Status</label>
+            <select id="g-status" v-model="form.status" required class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm">
+              <option value="" disabled>Pilih status</option>
+              <option v-for="s in GROUP_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 class="mb-3 font-semibold text-slate-900">Detail Anggota</h2>
+        <GroupMemberEditor v-model="members" :disabled="submitting" />
+      </div>
+
+      <button type="submit" :disabled="submitting" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50">
         {{ submitting ? 'Menyimpan...' : 'Simpan' }}
       </button>
     </form>
 
-    <AppModal :open="modalMessage !== ''" title="Pemberitahuan" :message="modalMessage" @close="modalMessage = ''" />
+    <AppModal :open="modalMessage !== ''" title="Data Belum Lengkap" :message="modalMessage" @close="modalMessage = ''" />
   </section>
 </template>

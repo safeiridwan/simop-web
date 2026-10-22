@@ -19,6 +19,7 @@ export interface CoachingGroup {
   id: string
   name: string
   murabbi: string
+  murabbi_cadre_profile_id: string | null
   level_id: string | null
   level_code: string | null
   level_name: string | null
@@ -40,6 +41,15 @@ export interface GroupMember {
 export interface GroupDetail {
   group: CoachingGroup
   members: GroupMember[]
+}
+
+/** Editable member row used by the group form/editor. */
+export interface GroupMemberRow {
+  cadre_profile_id: string
+  full_name: string
+  person_code: string
+  level_name: string
+  status: string
 }
 
 export interface PageMeta {

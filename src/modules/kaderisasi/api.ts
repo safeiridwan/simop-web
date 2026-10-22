@@ -24,9 +24,10 @@ export interface TaklimatInput {
 
 export interface GroupInput {
   name: string
-  murabbi: string
+  murabbi_cadre_profile_id: string
   level_id: string
-  status?: string
+  status: string
+  member_ids: string[]
 }
 
 export const kaderisasiApi = {

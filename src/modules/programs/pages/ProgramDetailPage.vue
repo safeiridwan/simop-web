@@ -9,7 +9,9 @@ import { downloadFile } from '@/services/http'
 import { programsApi } from '../api'
 import {
   canEditLpj,
+  canEditPlanned,
   canEditProposal,
+  formatAmount,
   lpjVisible,
   PROGRAM_REVERTS,
   PROGRAM_TRANSITIONS,
@@ -32,6 +34,9 @@ const modalTitle = ref('Pemberitahuan')
 const confirmMessage = ref('')
 let confirmAction: (() => Promise<void>) | null = null
 
+// Rencana Anggaran state.
+const plannedAmount = ref('')
+const editingPlanned = ref(false)
 // Proposal section state.
 const proposalAmount = ref('')
 const proposalFile = ref<File | null>(null)
@@ -75,6 +80,8 @@ async function load() {
   error.value = null
   try {
     detail.value = await programsApi.get(id)
+    plannedAmount.value = detail.value.program.planned_amount != null ? String(detail.value.program.planned_amount) : ''
+    editingPlanned.value = detail.value.program.planned_amount == null && canEditPlanned(detail.value.program.status, auth.isSuperAdmin)
     proposalAmount.value = detail.value.program.requested_amount != null ? String(detail.value.program.requested_amount) : ''
     lpjAmount.value = detail.value.program.actual_amount != null ? String(detail.value.program.actual_amount) : ''
     proposalFile.value = null
@@ -113,6 +120,18 @@ function revertProgram() {
 
 function amount(value: string): number | null {
   return value === '' ? null : Number(value)
+}
+
+function savePlanned() {
+  const nominal = amount(plannedAmount.value)
+  if (nominal == null || Number.isNaN(nominal) || nominal <= 0) {
+    notify('Rencana Anggaran wajib diisi dan harus lebih dari 0.', 'Data Belum Lengkap')
+    return
+  }
+  void run(async () => {
+    await programsApi.update(id, { planned_amount: nominal })
+    editingPlanned.value = false
+  })
 }
 
 async function saveProposal() {
@@ -224,6 +243,34 @@ async function download(fileId: string, filename: string) {
           </button>
         </div>
       </header>
+
+      <div class="mb-6 rounded-lg border border-slate-200 bg-white p-4">
+        <h2 class="mb-3 font-semibold text-slate-900">Rencana Anggaran</h2>
+        <template v-if="editingPlanned">
+          <label class="block text-sm font-medium text-slate-700" for="planned-amount">Rencana Anggaran</label>
+          <input id="planned-amount" v-model="plannedAmount" type="number" min="0" step="0.01" :disabled="saving" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm sm:max-w-xs" />
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button type="button" :disabled="saving" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50" @click="savePlanned">
+              {{ saving ? 'Menyimpan...' : 'Simpan' }}
+            </button>
+            <button v-if="detail.program.planned_amount != null" type="button" :disabled="saving" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="editingPlanned = false">
+              Batal
+            </button>
+          </div>
+        </template>
+        <template v-else>
+          <p class="text-sm text-slate-900">{{ formatAmount(detail.program.planned_amount) }}</p>
+          <button
+            v-if="canEditPlanned(detail.program.status, auth.isSuperAdmin)"
+            type="button"
+            :disabled="saving"
+            class="mt-3 rounded border border-slate-300 px-3 py-2 text-sm"
+            @click="editingPlanned = true"
+          >
+            Edit
+          </button>
+        </template>
+      </div>
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="rounded-lg border border-slate-200 bg-white p-4">

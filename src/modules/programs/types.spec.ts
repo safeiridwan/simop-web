@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import {
   canEditLpj,
+  canEditPlanned,
   canEditProposal,
+  formatAmount,
   lpjVisible,
   programBudget,
   PROGRAM_TRANSITIONS,
@@ -27,6 +29,7 @@ function program(partial: Partial<Program>): Program {
     location: null,
     person_in_charge_id: null,
     requested_amount: null,
+    planned_amount: null,
     approved_amount: null,
     proposal_file_id: null,
     proposal_file_name: null,
@@ -85,6 +88,20 @@ describe('program type helpers', () => {
     expect(canEditLpj('PROPOSED', false)).toBe(false)
     expect(canEditLpj('COMPLETED', false)).toBe(false)
     expect(canEditLpj('COMPLETED', true)).toBe(true)
+  })
+
+  it('formats amounts with a dash when empty and Indonesian separators', () => {
+    expect(formatAmount(null)).toBe('-')
+    expect(formatAmount(undefined)).toBe('-')
+    expect(formatAmount(1500000)).toBe('1.500.000')
+  })
+
+  it('allows Rencana Anggaran edits only on Draft/Revised (super admin override)', () => {
+    expect(canEditPlanned('DRAFT', false)).toBe(true)
+    expect(canEditPlanned('REVISED', false)).toBe(true)
+    expect(canEditPlanned('PROPOSED', false)).toBe(false)
+    expect(canEditPlanned('APPROVED', false)).toBe(false)
+    expect(canEditPlanned('APPROVED', true)).toBe(true)
   })
 
   it('shows the LPJ section from approval onward', () => {

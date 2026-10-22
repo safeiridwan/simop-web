@@ -28,6 +28,7 @@ export const programsApi = {
     activity_date?: string
     location?: string
     requested_amount?: number
+    planned_amount?: number
   }) => apiPost<Program>('/api/v1/programs', input),
   update: (id: string, input: Record<string, unknown>) => apiPatch<Program>(`/api/v1/programs/${id}`, input),
   transition: (id: string, action: string) => apiPost<Program>(`/api/v1/programs/${id}/${action}`),

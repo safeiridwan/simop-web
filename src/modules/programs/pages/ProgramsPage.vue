@@ -5,11 +5,10 @@ import AppModal from '@/components/AppModal.vue'
 import ImportPanel from '@/components/ImportPanel.vue'
 import Pagination from '@/components/Pagination.vue'
 import { downloadFile, HttpError } from '@/services/http'
-import { financeApi } from '@/modules/finance/api'
 import { organizationApi } from '@/modules/organization/api'
 import type { Unit } from '@/modules/organization/types'
 import { programsApi } from '../api'
-import { PROGRAM_STATUSES, programBudget, programStatusLabel, truncateFilename, type ImportResult, type PageMeta, type Program } from '../types'
+import { PROGRAM_STATUSES, formatAmount, programStatusLabel, truncateFilename, type ImportResult, type PageMeta, type Program } from '../types'
 
 const programs = ref<Program[]>([])
 const meta = ref<PageMeta | null>(null)
@@ -32,10 +31,10 @@ const importing = ref(false)
 const importResult = ref<ImportResult | null>(null)
 const importError = ref<string | null>(null)
 
-const form = reactive({ organization_unit_id: '', name: '', objective: '', start_date: '', end_date: '' })
+const form = reactive({ organization_unit_id: '', name: '', objective: '', start_date: '', end_date: '', planned_amount: '' })
 
 function money(v: number | null): string {
-  return v == null ? '—' : v.toLocaleString('id-ID')
+  return formatAmount(v)
 }
 
 function notify(message: string, title = 'Pemberitahuan') {
@@ -85,6 +84,7 @@ function resetForm() {
   form.objective = ''
   form.start_date = ''
   form.end_date = ''
+  form.planned_amount = ''
 }
 
 function validateForm(): string | null {
@@ -94,25 +94,17 @@ function validateForm(): string | null {
   if (!form.objective.trim()) missing.push('Tujuan')
   if (!form.start_date) missing.push('Tanggal Mulai')
   if (!form.end_date) missing.push('Tanggal Selesai')
+  if (!form.planned_amount) missing.push('Rencana Anggaran')
   if (missing.length > 0) {
     return `Field berikut wajib diisi: ${missing.join(', ')}.`
   }
   if (form.start_date > form.end_date) {
     return 'Tanggal mulai tidak boleh lebih besar dari tanggal selesai.'
   }
-  return null
-}
-
-async function unitHasBudget(unitId: string): Promise<boolean> {
-  try {
-    const year = new Date(form.start_date).getFullYear()
-    const rows = await financeApi.listPagu(year)
-    return rows.some((r) => r.organization_unit_id === unitId && r.pagu > 0)
-  } catch {
-    // If the user cannot read the anggaran summary, defer to the backend check
-    // (which returns a friendly UNIT_NO_BUDGET error) rather than blocking here.
-    return true
+  if (!(Number(form.planned_amount) > 0)) {
+    return 'Rencana Anggaran wajib diisi dan harus lebih dari 0.'
   }
+  return null
 }
 
 async function submit() {
@@ -124,16 +116,13 @@ async function submit() {
   submitting.value = true
   error.value = null
   try {
-    if (!(await unitHasBudget(form.organization_unit_id))) {
-      notify('Program tidak dapat dibuat karena anggaran untuk unit ini belum ditetapkan. Silakan atur anggaran terlebih dahulu di menu Keuangan > Anggaran.', 'Anggaran Belum Ditetapkan')
-      return
-    }
     await programsApi.create({
       organization_unit_id: form.organization_unit_id,
       name: form.name,
       objective: form.objective,
       start_date: form.start_date,
       end_date: form.end_date,
+      planned_amount: Number(form.planned_amount),
     })
     showForm.value = false
     resetForm()
@@ -219,6 +208,10 @@ async function onImport(file: File) {
         <label class="block text-sm font-medium text-slate-700" for="p-end">Selesai</label>
         <input id="p-end" v-model="form.end_date" type="date" required class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
       </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700" for="p-planned">Rencana Anggaran</label>
+        <input id="p-planned" v-model="form.planned_amount" type="number" min="0" step="0.01" required class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+      </div>
       <button type="button" :disabled="submitting" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 sm:col-span-2 sm:w-fit" @click="submit">
         {{ submitting ? 'Menyimpan...' : 'Simpan' }}
       </button>
@@ -244,8 +237,9 @@ async function onImport(file: File) {
             <th class="py-2 pr-4">Kode</th>
             <th class="py-2 pr-4">Nama</th>
             <th class="py-2 pr-4">Unit</th>
+            <th class="py-2 pr-4 text-right">Rencana Anggaran</th>
             <th class="py-2 pr-4">Proposal</th>
-            <th class="py-2 pr-4 text-right">Anggaran</th>
+            <th class="py-2 pr-4 text-right">Komitmen Anggaran</th>
             <th class="py-2 pr-4">LPJ</th>
             <th class="py-2 pr-4 text-right">Realisasi</th>
             <th class="py-2">Status</th>
@@ -258,6 +252,7 @@ async function onImport(file: File) {
               <router-link :to="`/programs/${p.id}`" class="text-brand-600 hover:underline">{{ p.name }}</router-link>
             </td>
             <td class="py-2 pr-4 text-slate-600">{{ p.organization_unit_name }}</td>
+            <td class="py-2 pr-4 text-right text-slate-600">{{ money(p.planned_amount) }}</td>
             <td class="py-2 pr-4">
               <button
                 v-if="p.proposal_file_id && p.proposal_file_name"
@@ -270,7 +265,7 @@ async function onImport(file: File) {
               </button>
               <span v-else class="text-slate-400">—</span>
             </td>
-            <td class="py-2 pr-4 text-right text-slate-600">{{ money(programBudget(p)) }}</td>
+            <td class="py-2 pr-4 text-right text-slate-600">{{ money(p.requested_amount) }}</td>
             <td class="py-2 pr-4">
               <button
                 v-if="p.lpj_file_id && p.lpj_file_name"
