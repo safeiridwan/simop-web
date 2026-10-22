@@ -4,7 +4,12 @@ import { describe, expect, it, vi } from 'vitest'
 import ProgramsPage from './ProgramsPage.vue'
 
 vi.mock('@/modules/organization/api', () => ({
-  organizationApi: { listUnits: vi.fn().mockResolvedValue({ data: [], meta: { page: 1, page_size: 200, total: 0 } }) },
+  organizationApi: {
+    listUnits: vi.fn().mockResolvedValue({
+      data: [{ id: 'u1', name: 'DPC Maros', code: 'DPC-MAROS' }],
+      meta: { page: 1, page_size: 200, total: 1 },
+    }),
+  },
 }))
 
 vi.mock('../api', () => ({
@@ -19,9 +24,9 @@ vi.mock('../api', () => ({
           name: 'Pelatihan',
           description: null,
           objective: 'Tujuan',
-          program_type: null,
-          start_date: null,
-          end_date: null,
+          program_type: 'PRIORITAS',
+          start_date: '2026-01-01',
+          end_date: '2026-01-01',
           activity_date: null,
           location: null,
           person_in_charge_id: null,
@@ -47,26 +52,41 @@ vi.mock('../api', () => ({
 }))
 
 describe('ProgramsPage', () => {
-  it('renders the nine program columns with empty amounts as a dash', async () => {
+  it('renders the ten program columns with rupiah amounts and a single date', async () => {
     const wrapper = mount(ProgramsPage, { global: { stubs: { RouterLink: true } } })
     await flushPromises()
 
-    const headers = wrapper.findAll('thead th').map((th) => th.text())
+    const headers = wrapper.findAll('thead tr')[0].findAll('th').map((th) => th.text())
     expect(headers).toEqual([
       'Kode',
       'Nama',
       'Unit',
+      'Tanggal Pelaksanaan',
       'Rencana Anggaran',
       'Proposal',
       'Komitmen Anggaran',
       'LPJ',
-      'Realisasi',
+      'Realisasi Anggaran',
       'Status',
     ])
 
     const cells = wrapper.findAll('tbody tr')[0].findAll('td').map((td) => td.text())
-    expect(cells[3]).toBe('-')
-    expect(cells[5]).toBe('2.000.000')
-    expect(cells[7]).toBe('1.500.000')
+    expect(cells[3]).toBe('01-01-2026')
+    expect(cells[4]).toBe('-')
+    expect(cells[6]).toBe('Rp 2.000.000')
+    expect(cells[8]).toBe('Rp 1.500.000')
+  })
+
+  it('renders the filter row with name, unit, date range, and status inputs', async () => {
+    const wrapper = mount(ProgramsPage, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+
+    expect(wrapper.find('input[aria-label="Filter nama"]').exists()).toBe(true)
+    expect(wrapper.find('select[aria-label="Filter unit"]').exists()).toBe(true)
+    expect(wrapper.find('input[aria-label="Filter tanggal mulai"]').exists()).toBe(true)
+    expect(wrapper.find('input[aria-label="Filter tanggal akhir"]').exists()).toBe(true)
+    expect(wrapper.find('select[aria-label="Filter status"]').exists()).toBe(true)
+    // The old free-text search box is gone.
+    expect(wrapper.find('input[placeholder="Cari nama atau kode"]').exists()).toBe(false)
   })
 })

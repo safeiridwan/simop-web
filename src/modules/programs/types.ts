@@ -62,10 +62,53 @@ export interface ProgramDetail {
   coverage?: ProgramCoverage
 }
 
+export interface TypeCount {
+  type: string
+  label: string
+  count: number
+  percentage: number
+}
+
+export interface MonthCount {
+  month: number
+  count: number
+}
+
+export interface TypeTotal {
+  type: string
+  label: string
+  total: number
+}
+
+export interface UnitTotal {
+  organization_unit_id: string
+  organization_unit_name: string
+  total: number
+}
+
+export interface ProgramSummary {
+  year: number
+  type_composition: TypeCount[]
+  monthly: MonthCount[]
+  grand_total: number
+  totals_by_type: TypeTotal[]
+  totals_by_unit: UnitTotal[]
+}
+
 export interface PageMeta {
   page: number
   page_size: number
   total: number
+}
+
+export const PROGRAM_TYPES: { value: string; label: string }[] = [
+  { value: 'PRIORITAS', label: 'Prioritas' },
+  { value: 'INISIATIF', label: 'Inisiatif' },
+  { value: 'TURUNAN_DPW', label: 'Turunan DPW' },
+]
+
+export function programTypeLabel(type: string | null | undefined): string {
+  return PROGRAM_TYPES.find((t) => t.value === type)?.label ?? 'Belum ditentukan'
 }
 
 export const PROGRAM_STATUSES: { value: string; label: string }[] = [
@@ -108,14 +151,14 @@ export function programBudget(program: Program): number | null {
   return program.approved_amount ?? program.requested_amount
 }
 
-/** Format a nominal for display; empty values show a dash. */
-export function formatAmount(value: number | null | undefined): string {
-  return value == null ? '-' : value.toLocaleString('id-ID')
+/** Whether the program header is editable for the actor, by status. */
+export function canEditHeader(status: string, isSuperAdmin: boolean): boolean {
+  return isSuperAdmin || status === 'DRAFT' || status === 'REVISED'
 }
 
 /** Whether the Rencana Anggaran is editable for the actor, by status. */
 export function canEditPlanned(status: string, isSuperAdmin: boolean): boolean {
-  return isSuperAdmin || status === 'DRAFT' || status === 'REVISED'
+  return canEditHeader(status, isSuperAdmin)
 }
 
 /** Truncate a filename to a maximum length, appending an ellipsis. */

@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  canEditHeader,
   canEditLpj,
   canEditPlanned,
   canEditProposal,
-  formatAmount,
   lpjVisible,
   programBudget,
   PROGRAM_TRANSITIONS,
+  programTypeLabel,
   programStatusLabel,
   truncateFilename,
   type Program,
@@ -90,10 +91,19 @@ describe('program type helpers', () => {
     expect(canEditLpj('COMPLETED', true)).toBe(true)
   })
 
-  it('formats amounts with a dash when empty and Indonesian separators', () => {
-    expect(formatAmount(null)).toBe('-')
-    expect(formatAmount(undefined)).toBe('-')
-    expect(formatAmount(1500000)).toBe('1.500.000')
+  it('labels program types and falls back for legacy rows', () => {
+    expect(programTypeLabel('PRIORITAS')).toBe('Prioritas')
+    expect(programTypeLabel('INISIATIF')).toBe('Inisiatif')
+    expect(programTypeLabel('TURUNAN_DPW')).toBe('Turunan DPW')
+    expect(programTypeLabel(null)).toBe('Belum ditentukan')
+  })
+
+  it('gates the header to Draft/Revised (super admin override)', () => {
+    expect(canEditHeader('DRAFT', false)).toBe(true)
+    expect(canEditHeader('REVISED', false)).toBe(true)
+    expect(canEditHeader('PROPOSED', false)).toBe(false)
+    expect(canEditHeader('APPROVED', false)).toBe(false)
+    expect(canEditHeader('APPROVED', true)).toBe(true)
   })
 
   it('allows Rencana Anggaran edits only on Draft/Revised (super admin override)', () => {

@@ -43,7 +43,10 @@ const navGroups: NavGroup[] = [
   },
   {
     label: 'Program',
-    items: [{ label: 'Semua Program', to: '/programs', permission: 'programs:read' }],
+    items: [
+      { label: 'Ringkasan', to: '/programs/summary', permission: 'programs:read' },
+      { label: 'Semua Program', to: '/programs', permission: 'programs:read' },
+    ],
   },
   {
     label: 'Keuangan',

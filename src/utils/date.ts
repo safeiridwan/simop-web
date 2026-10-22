@@ -23,3 +23,16 @@ export function formatDate(value: string | Date | null | undefined): string {
   if (Number.isNaN(parsed.getTime())) return value
   return `${two(parsed.getDate())}-${two(parsed.getMonth() + 1)}-${parsed.getFullYear()}`
 }
+
+/**
+ * Format a program's execution dates: a single date when start equals end (or
+ * only one is set), otherwise a `dd-MM-yyyy s/d dd-MM-yyyy` range.
+ */
+export function formatDateRange(start: string | null | undefined, end: string | null | undefined): string {
+  const from = start ? formatDate(start) : ''
+  const to = end ? formatDate(end) : ''
+  if (!from && !to) return '—'
+  if (!to || from === to) return from || to
+  if (!from) return to
+  return `${from} s/d ${to}`
+}

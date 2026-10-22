@@ -1,10 +1,14 @@
 import { apiDelete, apiGet, apiGetPage, apiPatch, apiPost, apiPut, apiUpload, downloadFile } from '@/services/http'
-import type { ImportResult, PageMeta, Program, ProgramDetail, ProgramReport, ProgramTarget } from './types'
+import type { ImportResult, PageMeta, Program, ProgramDetail, ProgramReport, ProgramSummary, ProgramTarget } from './types'
 
 export interface ListProgramsQuery {
-  search?: string
+  name?: string
   status?: string
   organizationUnitId?: string
+  dateFrom?: string
+  dateTo?: string
+  sort?: string | null
+  direction?: string | null
   page?: number
   pageSize?: number
 }
@@ -12,9 +16,13 @@ export interface ListProgramsQuery {
 export const programsApi = {
   list: (query: ListProgramsQuery = {}) => {
     const params = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 10) })
-    if (query.search) params.set('search', query.search)
+    if (query.name) params.set('name', query.name)
     if (query.status) params.set('status', query.status)
     if (query.organizationUnitId) params.set('organization_unit_id', query.organizationUnitId)
+    if (query.dateFrom) params.set('date_from', query.dateFrom)
+    if (query.dateTo) params.set('date_to', query.dateTo)
+    if (query.sort) params.set('sort', query.sort)
+    if (query.direction) params.set('direction', query.direction)
     return apiGetPage<Program[], PageMeta>(`/api/v1/programs?${params.toString()}`)
   },
   get: (id: string) => apiGet<ProgramDetail>(`/api/v1/programs/${id}`),
@@ -29,8 +37,22 @@ export const programsApi = {
     location?: string
     requested_amount?: number
     planned_amount?: number
+    program_type?: string
   }) => apiPost<Program>('/api/v1/programs', input),
   update: (id: string, input: Record<string, unknown>) => apiPatch<Program>(`/api/v1/programs/${id}`, input),
+  updateHeader: (
+    id: string,
+    input: {
+      organization_unit_id: string
+      name: string
+      objective: string
+      program_type: string
+      start_date: string
+      end_date: string
+      planned_amount: number
+    },
+  ) => apiPut<Program>(`/api/v1/programs/${id}/header`, input),
+  summary: (year?: number) => apiGet<ProgramSummary>(`/api/v1/programs/summary${year ? `?year=${year}` : ''}`),
   transition: (id: string, action: string) => apiPost<Program>(`/api/v1/programs/${id}/${action}`),
   revert: (id: string, reason: string) => apiPost<Program>(`/api/v1/programs/${id}/revert`, { reason }),
 
