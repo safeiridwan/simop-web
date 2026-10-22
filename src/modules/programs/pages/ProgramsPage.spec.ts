@@ -83,8 +83,8 @@ describe('ProgramsPage', () => {
 
     expect(wrapper.find('input[aria-label="Filter nama"]').exists()).toBe(true)
     expect(wrapper.find('select[aria-label="Filter unit"]').exists()).toBe(true)
-    expect(wrapper.find('input[aria-label="Filter tanggal mulai"]').exists()).toBe(true)
-    expect(wrapper.find('input[aria-label="Filter tanggal akhir"]').exists()).toBe(true)
+    expect(wrapper.find('input[aria-label="Filter tanggal pelaksanaan dari"]').exists()).toBe(true)
+    expect(wrapper.find('input[aria-label="Filter tanggal pelaksanaan sampai"]').exists()).toBe(true)
     expect(wrapper.find('select[aria-label="Filter status"]').exists()).toBe(true)
     // The old free-text search box is gone.
     expect(wrapper.find('input[placeholder="Cari nama atau kode"]').exists()).toBe(false)

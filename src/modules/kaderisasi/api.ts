@@ -1,5 +1,14 @@
-import { apiDelete, apiGet, apiGetPage, apiPost, apiPut } from '@/services/http'
-import type { CoachingGroup, GroupDetail, GroupMember, Level, PageMeta, Taklimat } from './types'
+import { apiDelete, apiGet, apiGetPage, apiPost, apiPut, apiUpload, downloadFile } from '@/services/http'
+import type {
+  CoachingGroup,
+  GroupDetail,
+  GroupMember,
+  GroupSession,
+  Level,
+  MembershipProfile,
+  PageMeta,
+  Taklimat,
+} from './types'
 
 export interface ListQuery {
   status?: string
@@ -27,7 +36,48 @@ export interface GroupInput {
   murabbi_cadre_profile_id: string
   level_id: string
   status: string
+  formed_at: string
   member_ids: string[]
+}
+
+export interface ListGroupsQuery {
+  name?: string
+  levelId?: string
+  murabbi?: string
+  status?: string
+  formedFrom?: string
+  formedTo?: string
+  sort?: string | null
+  direction?: string | null
+  page?: number
+  pageSize?: number
+}
+
+export interface CadreOption {
+  id: string
+  person_code: string
+  full_name: string
+  level_code: string
+  level_name: string
+  status: string
+}
+
+export interface CadreOptionsQuery {
+  search?: string
+  groupId?: string
+  exclude?: string[]
+  limit?: number
+}
+
+export interface ImportRowError {
+  row: number
+  message: string
+}
+
+export interface ImportResult {
+  created: number
+  skipped: number
+  errors: ImportRowError[]
 }
 
 export const kaderisasiApi = {
@@ -42,8 +92,18 @@ export const kaderisasiApi = {
   publishTaklimat: (id: string) => apiPost<Taklimat>(`/api/v1/kaderisasi/taklimat/${id}/publish`),
   unpublishTaklimat: (id: string) => apiPost<Taklimat>(`/api/v1/kaderisasi/taklimat/${id}/unpublish`),
 
-  listGroups: (query: ListQuery = {}) =>
-    apiGetPage<CoachingGroup[], PageMeta>(`/api/v1/kaderisasi/coaching-groups?${params(query)}`),
+  listGroups: (query: ListGroupsQuery = {}) => {
+    const p = new URLSearchParams({ page: String(query.page ?? 1), page_size: String(query.pageSize ?? 10) })
+    if (query.name) p.set('name', query.name)
+    if (query.levelId) p.set('level_id', query.levelId)
+    if (query.murabbi) p.set('murabbi', query.murabbi)
+    if (query.status) p.set('status', query.status)
+    if (query.formedFrom) p.set('formed_from', query.formedFrom)
+    if (query.formedTo) p.set('formed_to', query.formedTo)
+    if (query.sort) p.set('sort', query.sort)
+    if (query.direction) p.set('direction', query.direction)
+    return apiGetPage<CoachingGroup[], PageMeta>(`/api/v1/kaderisasi/coaching-groups?${p.toString()}`)
+  },
   getGroup: (id: string) => apiGet<GroupDetail>(`/api/v1/kaderisasi/coaching-groups/${id}`),
   createGroup: (input: GroupInput) => apiPost<CoachingGroup>('/api/v1/kaderisasi/coaching-groups', input),
   updateGroup: (id: string, input: GroupInput) => apiPut<CoachingGroup>(`/api/v1/kaderisasi/coaching-groups/${id}`, input),
@@ -52,4 +112,29 @@ export const kaderisasiApi = {
     apiPost<GroupMember>(`/api/v1/kaderisasi/coaching-groups/${id}/members`, { cadre_profile_id: cadreProfileId }),
   removeMember: (id: string, memberId: string) =>
     apiDelete<{ status: string }>(`/api/v1/kaderisasi/coaching-groups/${id}/members/${memberId}`),
+  getMembershipProfile: (id: string, memberId: string) =>
+    apiGet<MembershipProfile>(`/api/v1/kaderisasi/coaching-groups/${id}/members/${memberId}/profile`),
+
+  listSessions: (id: string, query: { page?: number; pageSize?: number } = {}) =>
+    apiGetPage<GroupSession[], PageMeta>(
+      `/api/v1/kaderisasi/coaching-groups/${id}/sessions?page=${query.page ?? 1}&page_size=${query.pageSize ?? 10}`,
+    ),
+
+  cadreOptions: (query: CadreOptionsQuery = {}) => {
+    const p = new URLSearchParams()
+    if (query.search) p.set('search', query.search)
+    if (query.groupId) p.set('group_id', query.groupId)
+    if (query.limit) p.set('limit', String(query.limit))
+    for (const id of query.exclude ?? []) p.append('exclude', id)
+    const qs = p.toString()
+    return apiGet<CadreOption[]>(`/api/v1/kaderisasi/cadre-options${qs ? `?${qs}` : ''}`)
+  },
+
+  importTemplate: (format: 'xlsx' | 'csv') =>
+    downloadFile(`/api/v1/kaderisasi/coaching-groups/import/template?format=${format}`, `template-grup-pembinaan.${format}`),
+  importGroups: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return apiUpload<ImportResult>('/api/v1/kaderisasi/coaching-groups/import', form)
+  },
 }

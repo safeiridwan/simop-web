@@ -3,8 +3,11 @@ import { onMounted, reactive, ref, watch } from 'vue'
 
 import AppModal from '@/components/AppModal.vue'
 import CurrencyInput from '@/components/CurrencyInput.vue'
+import FilterDateRange from '@/components/FilterDateRange.vue'
+import FilterTextInput from '@/components/FilterTextInput.vue'
 import ImportPanel from '@/components/ImportPanel.vue'
 import Pagination from '@/components/Pagination.vue'
+import SortableTh from '@/components/SortableTh.vue'
 import { downloadFile, HttpError } from '@/services/http'
 import { useSort } from '@/composables/useSort'
 import { formatDateRange } from '@/utils/date'
@@ -40,7 +43,6 @@ const dateFrom = ref('')
 const dateTo = ref('')
 const dateError = ref('')
 const { sort, direction, toggle } = useSort()
-let nameTimer: number | undefined
 
 const modalMessage = ref('')
 const modalTitle = ref('Pemberitahuan')
@@ -101,12 +103,10 @@ async function load() {
 
 onMounted(load)
 
+// FilterTextInput debounces typing; each settled value resets to page 1.
 watch(nameFilter, () => {
-  window.clearTimeout(nameTimer)
-  nameTimer = window.setTimeout(() => {
-    page.value = 1
-    void load()
-  }, 350)
+  page.value = 1
+  void load()
 })
 
 function onFilterChange() {
@@ -283,61 +283,26 @@ async function onImport(file: File) {
 
     <p v-if="loading" class="text-sm text-slate-500">Memuat...</p>
     <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
-    <p v-else-if="dateError" class="text-sm text-red-600">{{ dateError }}</p>
-    <p v-else-if="programs.length === 0" class="text-sm text-slate-500">Belum ada program.</p>
+    <p v-else-if="programs.length === 0 && !dateError" class="text-sm text-slate-500">Belum ada program.</p>
 
     <div class="overflow-x-auto">
       <table class="w-full min-w-[70rem] border-collapse text-sm">
         <thead class="sticky top-0 z-10 bg-white">
-          <tr class="border-b border-slate-200 text-left text-slate-500">
-            <th class="py-2 pr-4">
-              <button type="button" class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-800" :aria-sort="sort === 'program_code' ? (direction === 'desc' ? 'descending' : 'ascending') : 'none'" @click="onSort('program_code')">
-                Kode <span class="text-brand-600" aria-hidden="true">{{ sort === 'program_code' ? (direction === 'desc' ? '▼' : '▲') : '' }}</span>
-              </button>
-            </th>
-            <th class="py-2 pr-4">
-              <button type="button" class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-800" :aria-sort="sort === 'name' ? (direction === 'desc' ? 'descending' : 'ascending') : 'none'" @click="onSort('name')">
-                Nama <span class="text-brand-600" aria-hidden="true">{{ sort === 'name' ? (direction === 'desc' ? '▼' : '▲') : '' }}</span>
-              </button>
-            </th>
-            <th class="py-2 pr-4">
-              <button type="button" class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-800" :aria-sort="sort === 'unit' ? (direction === 'desc' ? 'descending' : 'ascending') : 'none'" @click="onSort('unit')">
-                Unit <span class="text-brand-600" aria-hidden="true">{{ sort === 'unit' ? (direction === 'desc' ? '▼' : '▲') : '' }}</span>
-              </button>
-            </th>
-            <th class="py-2 pr-4">
-              <button type="button" class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-800" :aria-sort="sort === 'start_date' ? (direction === 'desc' ? 'descending' : 'ascending') : 'none'" @click="onSort('start_date')">
-                Tanggal Pelaksanaan <span class="text-brand-600" aria-hidden="true">{{ sort === 'start_date' ? (direction === 'desc' ? '▼' : '▲') : '' }}</span>
-              </button>
-            </th>
-            <th class="py-2 pr-4 text-right">
-              <button type="button" class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-800" :aria-sort="sort === 'planned_amount' ? (direction === 'desc' ? 'descending' : 'ascending') : 'none'" @click="onSort('planned_amount')">
-                Rencana Anggaran <span class="text-brand-600" aria-hidden="true">{{ sort === 'planned_amount' ? (direction === 'desc' ? '▼' : '▲') : '' }}</span>
-              </button>
-            </th>
+          <tr class="border-b border-slate-200 text-slate-500">
+            <SortableTh field="program_code" label="Kode" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="name" label="Nama" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="unit" label="Unit" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="start_date" label="Tanggal Pelaksanaan" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="planned_amount" label="Rencana Anggaran" :active="sort" :direction="direction" align="right" @sort="onSort" />
             <th class="py-2 pr-4">Proposal</th>
-            <th class="py-2 pr-4 text-right">
-              <button type="button" class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-800" :aria-sort="sort === 'requested_amount' ? (direction === 'desc' ? 'descending' : 'ascending') : 'none'" @click="onSort('requested_amount')">
-                Komitmen Anggaran <span class="text-brand-600" aria-hidden="true">{{ sort === 'requested_amount' ? (direction === 'desc' ? '▼' : '▲') : '' }}</span>
-              </button>
-            </th>
+            <SortableTh field="requested_amount" label="Komitmen Anggaran" :active="sort" :direction="direction" align="right" @sort="onSort" />
             <th class="py-2 pr-4">LPJ</th>
-            <th class="py-2 pr-4 text-right">
-              <button type="button" class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-800" :aria-sort="sort === 'actual_amount' ? (direction === 'desc' ? 'descending' : 'ascending') : 'none'" @click="onSort('actual_amount')">
-                Realisasi Anggaran <span class="text-brand-600" aria-hidden="true">{{ sort === 'actual_amount' ? (direction === 'desc' ? '▼' : '▲') : '' }}</span>
-              </button>
-            </th>
-            <th class="py-2">
-              <button type="button" class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-800" :aria-sort="sort === 'status' ? (direction === 'desc' ? 'descending' : 'ascending') : 'none'" @click="onSort('status')">
-                Status <span class="text-brand-600" aria-hidden="true">{{ sort === 'status' ? (direction === 'desc' ? '▼' : '▲') : '' }}</span>
-              </button>
-            </th>
+            <SortableTh field="actual_amount" label="Realisasi Anggaran" :active="sort" :direction="direction" align="right" @sort="onSort" />
+            <SortableTh field="status" label="Status" :active="sort" :direction="direction" @sort="onSort" />
           </tr>
           <tr class="border-b border-slate-200">
             <th class="pb-2 pr-4"></th>
-            <th class="pb-2 pr-4">
-              <input v-model="nameFilter" placeholder="Cari nama" class="w-full rounded border border-slate-300 px-2 py-1 text-xs font-normal" aria-label="Filter nama" />
-            </th>
+            <th class="pb-2 pr-4"><FilterTextInput v-model="nameFilter" label="Filter nama" placeholder="Cari nama" /></th>
             <th class="pb-2 pr-4">
               <select v-model="unitFilter" class="w-full rounded border border-slate-300 px-2 py-1 text-xs font-normal" aria-label="Filter unit" @change="onFilterChange">
                 <option value="">Semua unit</option>
@@ -345,11 +310,7 @@ async function onImport(file: File) {
               </select>
             </th>
             <th class="pb-2 pr-4">
-              <div class="flex items-center gap-1">
-                <input v-model="dateFrom" type="date" class="w-full rounded border border-slate-300 px-2 py-1 text-xs font-normal" aria-label="Filter tanggal mulai" @change="onFilterChange" />
-                <span class="text-xs text-slate-400">s/d</span>
-                <input v-model="dateTo" type="date" class="w-full rounded border border-slate-300 px-2 py-1 text-xs font-normal" aria-label="Filter tanggal akhir" @change="onFilterChange" />
-              </div>
+              <FilterDateRange v-model:from="dateFrom" v-model:to="dateTo" label="Filter tanggal pelaksanaan" @change="onFilterChange" />
             </th>
             <th class="pb-2 pr-4"></th>
             <th class="pb-2 pr-4"></th>

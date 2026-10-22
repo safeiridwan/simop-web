@@ -17,7 +17,9 @@ const emit = defineEmits<{ close: []; confirm: [] }>()
         <h2 class="text-lg font-semibold text-slate-900">
           {{ title ?? (variant === 'confirm' ? 'Konfirmasi' : 'Pemberitahuan') }}
         </h2>
-        <p class="mt-2 text-sm text-slate-600">{{ message }}</p>
+        <div class="mt-2 text-sm text-slate-600">
+          <slot>{{ message }}</slot>
+        </div>
         <div class="mt-4 flex justify-end gap-2">
           <button
             v-if="variant === 'confirm'"

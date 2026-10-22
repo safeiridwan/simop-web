@@ -24,6 +24,7 @@ export interface CoachingGroup {
   level_code: string | null
   level_name: string | null
   status: string
+  formed_at: string | null
   member_count: number
   created_at: string
 }
@@ -81,4 +82,55 @@ export function groupStatusLabel(status: string): string {
 export function truncateFilename(name: string | null, max = 50): string {
   if (!name) return ''
   return name.length > max ? `${name.slice(0, max)}...` : name
+}
+
+export interface SessionAttendee {
+  cadre_profile_id: string
+  person_code: string
+  full_name: string
+  level_code: string
+  level_name: string
+}
+
+export interface GroupSession {
+  id: string
+  session_date: string | null
+  material: string | null
+  notes: string | null
+  attendees: SessionAttendee[]
+}
+
+export interface PartyMemberInfo {
+  member_number: string
+  join_date: string | null
+  status: string
+  membership_source: string | null
+}
+
+export interface CadreInfo {
+  level_code: string
+  level_name: string
+  status: string
+  started_at: string | null
+}
+
+export interface AffiliationInfo {
+  affiliation_type: string
+  status: string
+  start_date: string | null
+  end_date: string | null
+  notes: string | null
+}
+
+export interface MembershipProfile {
+  person: { id: string; person_code: string; full_name: string }
+  party_member: PartyMemberInfo | null
+  cadre: CadreInfo | null
+  affiliations: AffiliationInfo[]
+}
+
+/** Truncate long free text for a table cell. */
+export function truncateText(value: string | null, max = 60): string {
+  if (!value) return ''
+  return value.length > max ? `${value.slice(0, max)}...` : value
 }

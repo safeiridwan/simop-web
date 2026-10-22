@@ -37,4 +37,10 @@ export const kaderisasiRoutes: RouteRecordRaw[] = [
     component: () => import('./pages/GroupDetailPage.vue'),
     meta: { requiresAuth: true, permission: 'kaderisasi:read' },
   },
+  {
+    path: '/kaderisasi/grup-pembinaan/:id/riwayat',
+    name: 'kaderisasi-group-history',
+    component: () => import('./pages/GroupHistoryPage.vue'),
+    meta: { requiresAuth: true, permission: 'kaderisasi:read' },
+  },
 ]

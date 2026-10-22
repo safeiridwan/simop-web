@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import AppModal from '@/components/AppModal.vue'
-import { kaderisasiApi } from '../api'
+import { kaderisasiApi, type CadreOption } from '../api'
 import { GROUP_STATUSES, type GroupMemberRow, type Level } from '../types'
 import CadrePicker from '../components/CadrePicker.vue'
 import GroupMemberEditor from '../components/GroupMemberEditor.vue'
@@ -14,8 +14,11 @@ const submitting = ref(false)
 const error = ref<string | null>(null)
 const modalMessage = ref('')
 
-const form = reactive({ name: '', murabbi_cadre_profile_id: '', level_id: '', status: 'ACTIVE' })
+const form = reactive({ name: '', murabbi_cadre_profile_id: '', level_id: '', status: 'ACTIVE', formed_at: '' })
+const murabbiLabel = ref('')
 const members = ref<GroupMemberRow[]>([])
+
+const memberIds = computed(() => members.value.map((m) => m.cadre_profile_id).filter(Boolean))
 
 onMounted(async () => {
   try {
@@ -25,20 +28,24 @@ onMounted(async () => {
   }
 })
 
+function onMurabbiSelect(option: CadreOption) {
+  murabbiLabel.value = `${option.person_code} - ${option.full_name}`
+}
+
 function validate(): string | null {
   const missing: string[] = []
   if (!form.name.trim()) missing.push('Nama Grup')
   if (!form.murabbi_cadre_profile_id) missing.push('Murabbi')
   if (!form.level_id) missing.push('Jenjang')
   if (!form.status) missing.push('Status')
+  if (!form.formed_at) missing.push('Tanggal Terbentuk')
   if (missing.length > 0) {
     return `Field berikut wajib diisi: ${missing.join(', ')}.`
   }
-  const ids = members.value.map((m) => m.cadre_profile_id).filter(Boolean)
-  if (ids.includes(form.murabbi_cadre_profile_id)) {
+  if (memberIds.value.includes(form.murabbi_cadre_profile_id)) {
     return 'Murabbi tidak boleh menjadi anggota grup yang dibinanya.'
   }
-  if (new Set(ids).size !== ids.length) {
+  if (new Set(memberIds.value).size !== memberIds.value.length) {
     return 'Satu kader tidak boleh muncul lebih dari sekali dalam satu grup.'
   }
   return null
@@ -58,7 +65,8 @@ async function submit() {
       murabbi_cadre_profile_id: form.murabbi_cadre_profile_id,
       level_id: form.level_id,
       status: form.status,
-      member_ids: members.value.map((m) => m.cadre_profile_id).filter(Boolean),
+      formed_at: form.formed_at,
+      member_ids: memberIds.value,
     })
     await router.push(`/kaderisasi/grup-pembinaan/${created.id}`)
   } catch (err) {
@@ -89,7 +97,13 @@ async function submit() {
           <div>
             <label class="block text-sm font-medium text-slate-700">Murabbi</label>
             <div class="mt-1">
-              <CadrePicker v-model="form.murabbi_cadre_profile_id" :disabled="submitting" />
+              <CadrePicker
+                v-model="form.murabbi_cadre_profile_id"
+                :exclude-ids="memberIds"
+                :initial-label="murabbiLabel"
+                :disabled="submitting"
+                @select="onMurabbiSelect"
+              />
             </div>
           </div>
           <div>
@@ -106,12 +120,20 @@ async function submit() {
               <option v-for="s in GROUP_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
             </select>
           </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700" for="g-formed">Tanggal Terbentuk</label>
+            <input id="g-formed" v-model="form.formed_at" type="date" required class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+          </div>
         </div>
       </div>
 
       <div class="rounded-lg border border-slate-200 bg-white p-4">
         <h2 class="mb-3 font-semibold text-slate-900">Detail Anggota</h2>
-        <GroupMemberEditor v-model="members" :disabled="submitting" />
+        <GroupMemberEditor
+          v-model="members"
+          :murabbi-id="form.murabbi_cadre_profile_id"
+          :disabled="submitting"
+        />
       </div>
 
       <button type="submit" :disabled="submitting" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50">

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { groupStatusLabel, taklimatStatusLabel, truncateFilename } from './types'
+import { groupStatusLabel, taklimatStatusLabel, truncateFilename, truncateText } from './types'
 
 describe('kaderisasi type helpers', () => {
   it('labels taklimat statuses', () => {
@@ -17,5 +17,14 @@ describe('kaderisasi type helpers', () => {
 
   it('truncates long filenames', () => {
     expect(truncateFilename('a'.repeat(60))).toHaveLength(53)
+  })
+})
+
+describe('truncateText', () => {
+  it('keeps short text and trims long text', () => {
+    expect(truncateText(null)).toBe('')
+    expect(truncateText('pendek')).toBe('pendek')
+    const long = 'a'.repeat(70)
+    expect(truncateText(long)).toBe(`${'a'.repeat(60)}...`)
   })
 })
