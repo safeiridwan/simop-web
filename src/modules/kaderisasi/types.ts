@@ -221,3 +221,69 @@ export function weeklyAgendaStatusLabel(status: string): string {
       return 'Tidak Berjalan'
   }
 }
+
+// --- Ringkasan grup (Kehadiran Temu Pekanan & Mutabaah Yaumiyah) ---
+
+export interface SummaryDatePeriod {
+  from: string
+  to: string
+  timezone: string
+}
+
+export interface AttendanceSessionRow {
+  id: string
+  session_date: string
+  material: string
+}
+
+export interface AttendanceMemberRow {
+  member_id: string
+  cadre_profile_id: string
+  full_name: string
+  person_code: string
+  joined_at: string
+  attended: number
+  total_meetings: number
+  percentage: number
+  attended_session_ids: string[]
+}
+
+export interface GroupAttendanceSummary {
+  group_id: string
+  period: SummaryDatePeriod
+  sessions: AttendanceSessionRow[]
+  members: AttendanceMemberRow[]
+  summary: { average_percentage: number; meeting_count: number }
+}
+
+export interface MutabaahGroupItem {
+  code: string
+  label: string
+  average_percentage: number
+}
+
+export interface MutabaahMemberItem {
+  code: string
+  label: string
+  days_done: number
+  percentage: number
+}
+
+export interface MutabaahMemberRow {
+  member_id: string
+  cadre_profile_id: string
+  full_name: string
+  person_code: string
+  filled_days: number
+  total_days: number
+  percentage: number
+  items: MutabaahMemberItem[]
+}
+
+export interface GroupMutabaahSummary {
+  group_id: string
+  period: SummaryDatePeriod
+  days: number
+  items: MutabaahGroupItem[]
+  members: MutabaahMemberRow[]
+}

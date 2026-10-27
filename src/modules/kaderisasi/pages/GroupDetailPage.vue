@@ -10,7 +10,9 @@ import { formatDate } from '@/utils/date'
 import { kaderisasiApi, type CadreOption } from '../api'
 import { GROUP_STATUSES, groupStatusLabel, type GroupDetail, type GroupMemberRow, type Level } from '../types'
 import CadrePicker from '../components/CadrePicker.vue'
+import GroupAttendanceSection from '../components/GroupAttendanceSection.vue'
 import GroupMemberEditor from '../components/GroupMemberEditor.vue'
+import GroupMutabaahSection from '../components/GroupMutabaahSection.vue'
 import MemberMembershipModal from '../components/MemberMembershipModal.vue'
 
 const route = useRoute()
@@ -183,18 +185,6 @@ function openMember(member: { id: string; full_name: string; person_code: string
           <h1 class="text-xl font-semibold text-slate-900">{{ group.name }}</h1>
         </div>
         <div class="flex flex-wrap gap-2">
-          <router-link
-            :to="`/kaderisasi/grup-pembinaan/${group.id}/riwayat`"
-            class="inline-flex items-center gap-1 rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-            aria-label="Riwayat Pelaksanaan Pembinaan"
-            title="Riwayat Pelaksanaan Pembinaan"
-          >
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 2" />
-            </svg>
-            Riwayat
-          </router-link>
           <template v-if="canUpdate">
             <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="editing ? (editing = false) : startEdit()">
               {{ editing ? 'Batal' : 'Edit' }}
@@ -298,6 +288,9 @@ function openMember(member: { id: string; full_name: string; person_code: string
         </div>
       </div>
     </template>
+
+    <GroupAttendanceSection v-if="detail && group" class="mt-6" :group-id="id" />
+    <GroupMutabaahSection v-if="detail && group" class="mt-6" :group-id="id" />
 
     <MemberMembershipModal
       :open="selectedMember !== null"

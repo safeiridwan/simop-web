@@ -36,3 +36,13 @@ export function formatDateRange(start: string | null | undefined, end: string | 
   if (!from) return to
   return `${from} s/d ${to}`
 }
+
+/** Local calendar date as `yyyy-mm-dd` (API filter format). */
+export function isoDate(date: Date = new Date()): string {
+  return `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`
+}
+
+/** Default reporting period: 1 January of the current year through today. */
+export function defaultYearToDate(): { from: string; to: string } {
+  return { from: `${new Date().getFullYear()}-01-01`, to: isoDate() }
+}

@@ -1,7 +1,9 @@
 import { apiDelete, apiGet, apiGetPage, apiPost, apiPut, apiUpload, downloadFile } from '@/services/http'
 import type {
   CoachingGroup,
+  GroupAttendanceSummary,
   GroupDetail,
+  GroupMutabaahSummary,
   GroupMember,
   GroupSession,
   Level,
@@ -116,6 +118,19 @@ export const kaderisasiApi = {
     apiDelete<{ status: string }>(`/api/v1/kaderisasi/coaching-groups/${id}/members/${memberId}`),
   getMembershipProfile: (id: string, memberId: string) =>
     apiGet<MembershipProfile>(`/api/v1/kaderisasi/coaching-groups/${id}/members/${memberId}/profile`),
+
+  groupAttendanceSummary: (id: string, from: string, to: string) => {
+    const p = new URLSearchParams({ from, to })
+    return apiGet<GroupAttendanceSummary>(
+      `/api/v1/kaderisasi/coaching-groups/${id}/attendance-summary?${p.toString()}`,
+    )
+  },
+  groupMutabaahSummary: (id: string, from: string, to: string) => {
+    const p = new URLSearchParams({ from, to })
+    return apiGet<GroupMutabaahSummary>(
+      `/api/v1/kaderisasi/coaching-groups/${id}/mutabaah-summary?${p.toString()}`,
+    )
+  },
 
   listSessions: (id: string, query: { page?: number; pageSize?: number } = {}) =>
     apiGetPage<GroupSession[], PageMeta>(

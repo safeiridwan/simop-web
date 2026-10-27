@@ -24,6 +24,20 @@ vi.mock('../api', () => ({
       members: [],
     }),
     levels: vi.fn().mockResolvedValue([{ id: 'l1', code: 'MULA', name: 'Mula', rank_order: 1 }]),
+    groupAttendanceSummary: vi.fn().mockResolvedValue({
+      group_id: 'g1',
+      period: { from: '2026-01-01', to: '2026-10-27', timezone: 'Asia/Makassar' },
+      sessions: [],
+      members: [],
+      summary: { average_percentage: 0, meeting_count: 0 },
+    }),
+    groupMutabaahSummary: vi.fn().mockResolvedValue({
+      group_id: 'g1',
+      period: { from: '2026-01-01', to: '2026-10-27', timezone: 'Asia/Makassar' },
+      days: 0,
+      items: [],
+      members: [],
+    }),
   },
 }))
 
@@ -37,29 +51,53 @@ vi.mock('@/app/stores/auth', () => ({
 }))
 
 async function mountPage() {
-  const wrapper = mount(GroupDetailPage, { global: { stubs: { RouterLink: { template: '<a><slot /></a>' } } } })
+  const wrapper = mount(GroupDetailPage, {
+    global: {
+      stubs: {
+        RouterLink: { template: '<a><slot /></a>' },
+        CadrePicker: true,
+        GroupMemberEditor: true,
+      },
+    },
+  })
   await flushPromises()
   return wrapper
 }
 
-describe('GroupDetailPage actions', () => {
-  it('places Riwayat to the left of Edit with the same icon and label', async () => {
+describe('GroupDetailPage sections', () => {
+  it('removes the Riwayat button', async () => {
     auth.canUpdate = true
     const wrapper = await mountPage()
 
     const header = wrapper.find('header')
-    const html = header.html()
-    expect(html).toContain('Riwayat')
-    expect(html.indexOf('Riwayat')).toBeLessThan(html.indexOf('>Edit<'))
-    expect(header.find('a[aria-label="Riwayat Pelaksanaan Pembinaan"]').exists()).toBe(true)
+    expect(header.text()).not.toContain('Riwayat')
+    expect(header.find('a[aria-label="Riwayat Pelaksanaan Pembinaan"]').exists()).toBe(false)
   })
 
-  it('keeps Riwayat visible when Edit is not available', async () => {
-    auth.canUpdate = false
+  it('renders the four sections in order', async () => {
+    auth.canUpdate = true
     const wrapper = await mountPage()
 
-    const header = wrapper.find('header')
-    expect(header.find('a[aria-label="Riwayat Pelaksanaan Pembinaan"]').exists()).toBe(true)
-    expect(header.text()).not.toContain('Edit')
+    const headings = wrapper.findAll('h2').map((node) => node.text())
+    expect(headings).toEqual([
+      'Header',
+      'Detail Anggota (0)',
+      'Kehadiran Temu Pekanan',
+      'Mutabaah Yaumiyah',
+    ])
+  })
+
+  it('keeps the new read-only sections visible while editing', async () => {
+    auth.canUpdate = true
+    const wrapper = await mountPage()
+
+    const edit = wrapper.findAll('button').find((node) => node.text() === 'Edit')
+    expect(edit).toBeDefined()
+    await edit!.trigger('click')
+    await flushPromises()
+
+    const text = wrapper.text()
+    expect(text).toContain('Kehadiran Temu Pekanan')
+    expect(text).toContain('Mutabaah Yaumiyah')
   })
 })
