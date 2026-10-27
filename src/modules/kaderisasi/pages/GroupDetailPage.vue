@@ -181,11 +181,25 @@ function openMember(member: { id: string; full_name: string; person_code: string
           <router-link to="/kaderisasi/grup-pembinaan" class="text-sm text-brand-600 hover:underline">← Grup Pembinaan</router-link>
           <h1 class="text-xl font-semibold text-slate-900">{{ group.name }}</h1>
         </div>
-        <div v-if="canUpdate" class="flex gap-2">
-          <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="editing ? (editing = false) : startEdit()">
-            {{ editing ? 'Batal' : 'Edit' }}
-          </button>
-          <button type="button" class="rounded border border-red-300 px-3 py-2 text-sm text-red-600" @click="removeGroup">Hapus</button>
+        <div class="flex flex-wrap gap-2">
+          <router-link
+            :to="`/kaderisasi/grup-pembinaan/${group.id}/riwayat`"
+            class="inline-flex items-center gap-1 rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            aria-label="Riwayat Pelaksanaan Pembinaan"
+            title="Riwayat Pelaksanaan Pembinaan"
+          >
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 2" />
+            </svg>
+            Riwayat
+          </router-link>
+          <template v-if="canUpdate">
+            <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="editing ? (editing = false) : startEdit()">
+              {{ editing ? 'Batal' : 'Edit' }}
+            </button>
+            <button type="button" class="rounded border border-red-300 px-3 py-2 text-sm text-red-600" @click="removeGroup">Hapus</button>
+          </template>
         </div>
       </header>
 
@@ -196,23 +210,9 @@ function openMember(member: { id: string; full_name: string; person_code: string
           <div><dt class="text-slate-500">Murabbi</dt><dd class="text-slate-900">{{ group.murabbi || '-' }}</dd></div>
           <div><dt class="text-slate-500">Jenjang</dt><dd class="text-slate-900">{{ group.level_name || '-' }}</dd></div>
           <div><dt class="text-slate-500">Tanggal Terbentuk</dt><dd class="text-slate-900">{{ group.formed_at ? formatDate(group.formed_at) : '-' }}</dd></div>
-          <div class="flex items-center gap-2">
-            <div>
-              <dt class="text-slate-500">Status</dt>
-              <dd class="text-slate-900">{{ groupStatusLabel(group.status) }}</dd>
-            </div>
-            <router-link
-              :to="`/kaderisasi/grup-pembinaan/${group.id}/riwayat`"
-              class="mt-4 inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
-              aria-label="Riwayat Pelaksanaan Pembinaan"
-              title="Riwayat Pelaksanaan Pembinaan"
-            >
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <circle cx="12" cy="12" r="9" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 2" />
-              </svg>
-              Riwayat
-            </router-link>
+          <div>
+            <dt class="text-slate-500">Status</dt>
+            <dd class="text-slate-900">{{ groupStatusLabel(group.status) }}</dd>
           </div>
         </dl>
       </div>

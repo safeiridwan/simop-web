@@ -33,6 +33,7 @@ const navGroups: NavGroup[] = [
   {
     label: 'Kaderisasi',
     items: [
+      { label: 'Ringkasan', to: '/kaderisasi/ringkasan', permission: 'kaderisasi:read' },
       { label: 'Taklimat', to: '/kaderisasi/taklimat', permission: 'kaderisasi:read' },
       { label: 'Grup Pembinaan', to: '/kaderisasi/grup-pembinaan', permission: 'kaderisasi:read' },
     ],

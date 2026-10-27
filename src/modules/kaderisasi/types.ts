@@ -134,3 +134,88 @@ export function truncateText(value: string | null, max = 60): string {
   if (!value) return ''
   return value.length > max ? `${value.slice(0, max)}...` : value
 }
+
+// --- Ringkasan (read-only dashboard) ---
+
+export interface SummaryPeriod {
+  month: string
+  from: string
+  to: string
+  days: number
+  week_start: string
+  week_end: string
+  timezone: string
+}
+
+export interface LevelCount {
+  level_id: string | null
+  code: string
+  name: string
+  count: number
+  percentage: number
+}
+
+export interface WeeklyAgendaRow {
+  group_id: string
+  name: string
+  murabbi: string
+  level_name: string | null
+  last_session_date: string | null
+  status: 'BERJALAN' | 'TIDAK_BERJALAN' | 'BARU'
+}
+
+export interface WeeklyAgenda {
+  items: WeeklyAgendaRow[]
+  meta: PageMeta
+}
+
+export interface TopMutabaahRow {
+  rank: number
+  cadre_profile_id: string | null
+  full_name: string
+  level_name: string
+  group_name: string
+  filled_days: number
+  total_days: number
+  percentage: number
+}
+
+export interface TopAttendanceRow {
+  rank: number
+  cadre_profile_id: string
+  full_name: string
+  level_name: string
+  group_name: string
+  approved: number
+  total_meetings: number
+  percentage: number
+}
+
+export interface SummaryPayload {
+  period: SummaryPeriod
+  groups_by_level?: LevelCount[]
+  members_by_level?: LevelCount[]
+  total_cadres?: number
+  weekly_agenda?: WeeklyAgenda
+  top_mutabaah?: TopMutabaahRow[]
+  top_attendance?: TopAttendanceRow[]
+}
+
+export type SummarySection =
+  | 'groups_by_level'
+  | 'members_by_level'
+  | 'total'
+  | 'weekly_agenda'
+  | 'top_mutabaah'
+  | 'top_attendance'
+
+export function weeklyAgendaStatusLabel(status: string): string {
+  switch (status) {
+    case 'BERJALAN':
+      return 'Berjalan'
+    case 'BARU':
+      return 'Baru'
+    default:
+      return 'Tidak Berjalan'
+  }
+}

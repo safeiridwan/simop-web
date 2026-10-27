@@ -2,6 +2,12 @@ import type { RouteRecordRaw } from 'vue-router'
 
 export const kaderisasiRoutes: RouteRecordRaw[] = [
   {
+    path: '/kaderisasi/ringkasan',
+    name: 'kaderisasi-ringkasan',
+    component: () => import('./pages/SummaryPage.vue'),
+    meta: { requiresAuth: true, permission: 'kaderisasi:read' },
+  },
+  {
     path: '/kaderisasi/taklimat',
     name: 'kaderisasi-taklimat',
     component: () => import('./pages/TaklimatPage.vue'),

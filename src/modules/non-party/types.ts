@@ -46,6 +46,15 @@ export const AFFILIATION_TYPES: { value: string; label: string; slug: string }[]
   { value: 'OTHER', label: 'Lainnya', slug: 'other' },
 ]
 
+export const AFFILIATION_STATUSES: { value: string; label: string }[] = [
+  { value: 'ACTIVE', label: 'Aktif' },
+  { value: 'INACTIVE', label: 'Tidak aktif' },
+]
+
+export function affiliationStatusLabel(status: string): string {
+  return AFFILIATION_STATUSES.find((s) => s.value === status)?.label ?? status
+}
+
 export function affiliationTypeLabel(type: string): string {
   return AFFILIATION_TYPES.find((t) => t.value === type)?.label ?? type
 }

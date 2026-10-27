@@ -16,9 +16,13 @@ import type {
 export interface ListCadresQuery {
   page?: number
   pageSize?: number
-  search?: string
   levelId?: string
   status?: string
+  fullName?: string
+  personCode?: string
+  city?: string
+  district?: string
+  village?: string
   sort?: string | null
   direction?: string | null
 }
@@ -30,9 +34,13 @@ export const cadreApi = {
     const params = new URLSearchParams()
     params.set('page', String(query.page ?? 1))
     params.set('page_size', String(query.pageSize ?? 10))
-    if (query.search) params.set('search', query.search)
     if (query.levelId) params.set('level_id', query.levelId)
     if (query.status) params.set('status', query.status)
+    if (query.fullName) params.set('full_name', query.fullName)
+    if (query.personCode) params.set('person_code', query.personCode)
+    if (query.city) params.set('city', query.city)
+    if (query.district) params.set('district', query.district)
+    if (query.village) params.set('village', query.village)
     if (query.sort) params.set('sort', query.sort)
     if (query.direction) params.set('direction', query.direction)
     return apiGetPage<CadreProfile[], PageMeta>(`/api/v1/cadres?${params.toString()}`)

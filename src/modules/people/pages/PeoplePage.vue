@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
+import FilterSelect from '@/components/FilterSelect.vue'
+import FilterTextInput from '@/components/FilterTextInput.vue'
+import ImportPanel from '@/components/ImportPanel.vue'
 import Pagination from '@/components/Pagination.vue'
 import SortableTh from '@/components/SortableTh.vue'
 import PersonForm from '../components/PersonForm.vue'
@@ -13,7 +16,11 @@ import { useSort } from '@/composables/useSort'
 const auth = useAuthStore()
 const { people, meta, loading, error, load } = usePeople()
 
-const search = ref('')
+const fullName = ref('')
+const personCode = ref('')
+const city = ref('')
+const district = ref('')
+const village = ref('')
 const status = ref('')
 const page = ref(1)
 const pageSize = ref(10)
@@ -67,7 +74,11 @@ function phoneDisplay(person: Person): string {
 
 function currentQuery() {
   return {
-    search: search.value,
+    fullName: fullName.value,
+    personCode: personCode.value,
+    city: city.value,
+    district: district.value,
+    village: village.value,
     status: status.value,
     page: page.value,
     pageSize: pageSize.value,
@@ -93,39 +104,20 @@ const showImport = ref(false)
 const importing = ref(false)
 const importError = ref<string | null>(null)
 const importResult = ref<ImportResult | null>(null)
-const importFile = ref<File | null>(null)
 
 onMounted(() => void load())
 
-function onImportFile(event: Event) {
-  const input = event.target as HTMLInputElement
-  importFile.value = input.files?.[0] ?? null
-}
-
-async function onImport() {
-  if (!importFile.value) {
-    importError.value = 'Pilih berkas terlebih dahulu.'
-    return
-  }
+async function onImport(file: File) {
   importing.value = true
   importError.value = null
   importResult.value = null
   try {
-    importResult.value = await peopleApi.importPeople(importFile.value)
-    importFile.value = null
+    importResult.value = await peopleApi.importPeople(file)
     await load(currentQuery())
   } catch (err) {
     importError.value = err instanceof Error ? err.message : 'Gagal mengimpor'
   } finally {
     importing.value = false
-  }
-}
-
-async function downloadTemplate(format: 'csv' | 'xlsx') {
-  try {
-    await peopleApi.importTemplate(format)
-  } catch (err) {
-    importError.value = err instanceof Error ? err.message : 'Gagal mengunduh template'
   }
 }
 
@@ -173,7 +165,7 @@ async function onCreate(input: PersonInput) {
           class="rounded border border-slate-300 px-3 py-2 text-sm sm:w-fit"
           @click="showImport = !showImport"
         >
-          {{ showImport ? 'Batal' : 'Impor' }}
+          {{ showImport ? 'Tutup Impor' : 'Impor' }}
         </button>
         <button
           type="button"
@@ -190,59 +182,21 @@ async function onCreate(input: PersonInput) {
       <PersonForm :submitting="submitting" submit-label="Simpan" duplicate-check @submit="onCreate" />
     </div>
 
-    <div v-if="showImport" class="mb-6 space-y-3 rounded-lg border border-slate-200 bg-white p-4">
-      <p class="text-sm text-slate-600">
-        Unggah berkas CSV atau XLSX. Baris yang NIK atau nomor HP-nya sudah terdaftar (data orang lama dipakai ulang) atau tidak valid akan dilewati dan dilaporkan. Kolom alamat opsional diisi bila wilayah cocok.
-      </p>
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="text-sm text-slate-500">Template:</span>
-        <button type="button" class="text-sm text-brand-600 hover:underline" @click="downloadTemplate('csv')">CSV</button>
-        <button type="button" class="text-sm text-brand-600 hover:underline" @click="downloadTemplate('xlsx')">XLSX</button>
-      </div>
-      <input type="file" accept=".csv,.xlsx" class="w-full text-sm" @change="onImportFile" />
-      <p v-if="importError" class="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{{ importError }}</p>
-      <button
-        type="button"
-        :disabled="importing"
-        class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
-        @click="onImport"
-      >
-        {{ importing ? 'Mengimpor...' : 'Impor Sekarang' }}
-      </button>
-
-      <div v-if="importResult" class="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
-        <p class="text-slate-700">
-          Selesai: {{ importResult.created }} dibuat, {{ importResult.skipped }} dilewati.
-        </p>
-        <ul v-if="importResult.errors.length" class="mt-2 space-y-1 text-xs text-red-600">
-          <li v-for="e in importResult.errors" :key="e.row">Baris {{ e.row }}: {{ e.message }}</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="mb-4 flex flex-wrap gap-2">
-      <input
-        v-model="search"
-        placeholder="Cari nama atau kode"
-        class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64"
-        @keyup.enter="onFilter"
-      />
-      <select v-model="status" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="onFilter">
-        <option value="">Semua status</option>
-        <option value="ACTIVE">Aktif</option>
-        <option value="INACTIVE">Tidak aktif</option>
-        <option value="DECEASED">Meninggal</option>
-      </select>
-      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="onFilter">Cari</button>
-    </div>
+    <ImportPanel
+      v-if="showImport"
+      template-path="/api/v1/persons/import/template"
+      template-filename="template-orang"
+      :busy="importing"
+      :result="importResult"
+      :error="importError"
+      @import="onImport"
+    />
 
     <p v-if="loading" class="text-sm text-slate-500">Memuat...</p>
     <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
-    <p v-else-if="people.length === 0" class="text-sm text-slate-500">Belum ada data orang.</p>
-
     <div v-else class="overflow-x-auto">
       <table class="w-full min-w-[60rem] border-collapse text-sm">
-        <thead>
+        <thead class="sticky top-0 z-10 bg-white">
           <tr class="border-b border-slate-200 text-left text-slate-500">
             <SortableTh field="person_code" label="Kode" :active="sort" :direction="direction" @sort="onSort" />
             <SortableTh field="full_name" label="Nama" :active="sort" :direction="direction" @sort="onSort" />
@@ -252,6 +206,28 @@ async function onCreate(input: PersonInput) {
             <SortableTh field="district_name" label="Kecamatan" :active="sort" :direction="direction" @sort="onSort" />
             <SortableTh field="village_name" label="Kelurahan" :active="sort" :direction="direction" @sort="onSort" />
             <SortableTh field="status" label="Status" :active="sort" :direction="direction" @sort="onSort" />
+          </tr>
+          <tr class="border-b border-slate-200">
+            <th class="pb-2 pr-4"><FilterTextInput v-model="personCode" label="Filter kode" placeholder="Cari kode" @update:model-value="onFilter" /></th>
+            <th class="pb-2 pr-4"><FilterTextInput v-model="fullName" label="Filter nama" placeholder="Cari nama" @update:model-value="onFilter" /></th>
+            <th class="pb-2 pr-4"></th>
+            <th class="pb-2 pr-4"></th>
+            <th class="pb-2 pr-4"><FilterTextInput v-model="city" label="Filter kabupaten/kota" placeholder="Cari kab/kota" @update:model-value="onFilter" /></th>
+            <th class="pb-2 pr-4"><FilterTextInput v-model="district" label="Filter kecamatan" placeholder="Cari kecamatan" @update:model-value="onFilter" /></th>
+            <th class="pb-2 pr-4"><FilterTextInput v-model="village" label="Filter kelurahan" placeholder="Cari kelurahan" @update:model-value="onFilter" /></th>
+            <th class="pb-2">
+              <FilterSelect
+                v-model="status"
+                label="Filter status"
+                all-label="Semua status"
+                :options="[
+                  { value: 'ACTIVE', label: 'Aktif' },
+                  { value: 'INACTIVE', label: 'Tidak aktif' },
+                  { value: 'DECEASED', label: 'Meninggal' },
+                ]"
+                @change="onFilter"
+              />
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -303,6 +279,7 @@ async function onCreate(input: PersonInput) {
             <td class="py-2 pr-4 text-slate-600">{{ person.village_name || '—' }}</td>
             <td class="py-2 text-slate-600">{{ person.status }}</td>
           </tr>
+          <tr v-if="people.length === 0"><td colspan="8" class="py-3 text-slate-500">Belum ada data.</td></tr>
         </tbody>
       </table>
     </div>

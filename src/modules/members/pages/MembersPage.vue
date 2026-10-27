@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
+import FilterDateRange from '@/components/FilterDateRange.vue'
+import FilterSelect from '@/components/FilterSelect.vue'
+import FilterTextInput from '@/components/FilterTextInput.vue'
+import ImportPanel from '@/components/ImportPanel.vue'
 import Pagination from '@/components/Pagination.vue'
 import SortableTh from '@/components/SortableTh.vue'
 import PersonPicker from '@/components/PersonPicker.vue'
 import type { Person } from '@/modules/people/types'
 import { downloadFile } from '@/services/http'
+import { formatDate } from '@/utils/date'
 import { membersApi } from '../api'
 import { useMembers } from '../composables/useMembers'
 import { useSort } from '@/composables/useSort'
@@ -13,8 +18,14 @@ import { MEMBER_STATUSES, memberStatusLabel, type CreateMemberInput, type Import
 
 const { members, meta, loading, error, load } = useMembers()
 
-const search = ref('')
+const fullName = ref('')
+const memberNumber = ref('')
+const city = ref('')
+const district = ref('')
+const village = ref('')
 const status = ref('')
+const joinFrom = ref('')
+const joinTo = ref('')
 const page = ref(1)
 const pageSize = ref(10)
 const { sort, direction, toggle } = useSort()
@@ -30,12 +41,17 @@ const showImport = ref(false)
 const importing = ref(false)
 const importError = ref<string | null>(null)
 const importResult = ref<ImportResult | null>(null)
-const importFile = ref<File | null>(null)
 
 function currentQuery() {
   return {
-    search: search.value,
+    fullName: fullName.value,
+    memberNumber: memberNumber.value,
+    city: city.value,
+    district: district.value,
+    village: village.value,
     status: status.value,
+    joinFrom: joinFrom.value,
+    joinTo: joinTo.value,
     page: page.value,
     pageSize: pageSize.value,
     sort: sort.value,
@@ -51,35 +67,17 @@ function onSort(field: string) {
 
 onMounted(() => void load())
 
-function onImportFile(event: Event) {
-  const input = event.target as HTMLInputElement
-  importFile.value = input.files?.[0] ?? null
-}
-
-async function onImport() {
-  if (!importFile.value) {
-    importError.value = 'Pilih berkas terlebih dahulu.'
-    return
-  }
+async function onImport(file: File) {
   importing.value = true
   importError.value = null
   importResult.value = null
   try {
-    importResult.value = await membersApi.import(importFile.value)
-    importFile.value = null
+    importResult.value = await membersApi.import(file)
     await load(currentQuery())
   } catch (err) {
     importError.value = err instanceof Error ? err.message : 'Gagal mengimpor'
   } finally {
     importing.value = false
-  }
-}
-
-async function downloadImportTemplate(format: 'csv' | 'xlsx') {
-  try {
-    await membersApi.importTemplate(format)
-  } catch (err) {
-    importError.value = err instanceof Error ? err.message : 'Gagal mengunduh template'
   }
 }
 
@@ -101,7 +99,7 @@ function onPageSizeChange(size: number) {
 
 async function onExport() {
   try {
-    await downloadFile(membersApi.exportUrl, 'members.csv')
+    await downloadFile(membersApi.exportUrl(currentQuery()), 'members.csv')
   } catch (err) {
     formError.value = err instanceof Error ? err.message : 'Gagal mengekspor'
   }
@@ -152,7 +150,7 @@ async function submit() {
           class="rounded border border-slate-300 px-3 py-2 text-sm"
           @click="showImport = !showImport"
         >
-          {{ showImport ? 'Batal' : 'Impor' }}
+          {{ showImport ? 'Tutup Impor' : 'Impor' }}
         </button>
         <button
           type="button"
@@ -164,33 +162,15 @@ async function submit() {
       </div>
     </header>
 
-    <div v-if="showImport" class="mb-6 space-y-3 rounded-lg border border-slate-200 bg-white p-4">
-      <p class="text-sm text-slate-600">
-        Unggah berkas CSV atau XLSX. Orang pada tiap baris dicocokkan lewat NIK atau nomor HP; bila belum ada, orang baru dibuat otomatis.
-        Baris yang gagal atau duplikat dilewati dan dilaporkan.
-      </p>
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="text-sm text-slate-500">Template:</span>
-        <button type="button" class="text-sm text-brand-600 hover:underline" @click="downloadImportTemplate('csv')">CSV</button>
-        <button type="button" class="text-sm text-brand-600 hover:underline" @click="downloadImportTemplate('xlsx')">XLSX</button>
-      </div>
-      <input type="file" accept=".csv,.xlsx" class="w-full text-sm" @change="onImportFile" />
-      <p v-if="importError" class="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{{ importError }}</p>
-      <button
-        type="button"
-        :disabled="importing"
-        class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
-        @click="onImport"
-      >
-        {{ importing ? 'Mengimpor...' : 'Impor Sekarang' }}
-      </button>
-      <div v-if="importResult" class="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
-        <p class="text-slate-700">Selesai: {{ importResult.created }} dibuat, {{ importResult.skipped }} dilewati.</p>
-        <ul v-if="importResult.errors.length" class="mt-2 space-y-1 text-xs text-red-600">
-          <li v-for="e in importResult.errors" :key="e.row">Baris {{ e.row }}: {{ e.message }}</li>
-        </ul>
-      </div>
-    </div>
+    <ImportPanel
+      v-if="showImport"
+      template-path="/api/v1/members/import/template"
+      template-filename="template-anggota"
+      :busy="importing"
+      :result="importResult"
+      :error="importError"
+      @import="onImport"
+    />
 
     <form v-if="showForm" class="mb-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-2" @submit.prevent="submit">
       <div class="sm:col-span-2">
@@ -215,27 +195,11 @@ async function submit() {
       </button>
     </form>
 
-    <div class="mb-4 flex flex-wrap gap-2">
-      <input
-        v-model="search"
-        placeholder="Cari nama atau nomor anggota"
-        class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64"
-        @keyup.enter="onFilter"
-      />
-      <select v-model="status" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="onFilter">
-        <option value="">Semua status</option>
-        <option v-for="s in MEMBER_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
-      </select>
-      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="onFilter">Cari</button>
-    </div>
-
     <p v-if="loading" class="text-sm text-slate-500">Memuat...</p>
     <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
-    <p v-else-if="members.length === 0" class="text-sm text-slate-500">Belum ada anggota.</p>
-
     <div v-else class="overflow-x-auto">
       <table class="w-full min-w-[58rem] border-collapse text-sm">
-        <thead>
+        <thead class="sticky top-0 z-10 bg-white">
           <tr class="border-b border-slate-200 text-left text-slate-500">
             <SortableTh field="member_number" label="No. Anggota" :active="sort" :direction="direction" @sort="onSort" />
             <SortableTh field="full_name" label="Nama" :active="sort" :direction="direction" @sort="onSort" />
@@ -244,6 +208,23 @@ async function submit() {
             <SortableTh field="village_name" label="Kelurahan" :active="sort" :direction="direction" @sort="onSort" />
             <SortableTh field="status" label="Status" :active="sort" :direction="direction" @sort="onSort" />
             <SortableTh field="join_date" label="Tgl Gabung" :active="sort" :direction="direction" @sort="onSort" />
+          </tr>
+          <tr class="border-b border-slate-200">
+            <th class="pb-2 pr-4"><FilterTextInput v-model="memberNumber" label="Filter nomor anggota" placeholder="Cari nomor" @update:model-value="onFilter" /></th>
+            <th class="pb-2 pr-4"><FilterTextInput v-model="fullName" label="Filter nama" placeholder="Cari nama" @update:model-value="onFilter" /></th>
+            <th class="pb-2 pr-4"><FilterTextInput v-model="city" label="Filter kabupaten/kota" placeholder="Cari kab/kota" @update:model-value="onFilter" /></th>
+            <th class="pb-2 pr-4"><FilterTextInput v-model="district" label="Filter kecamatan" placeholder="Cari kecamatan" @update:model-value="onFilter" /></th>
+            <th class="pb-2 pr-4"><FilterTextInput v-model="village" label="Filter kelurahan" placeholder="Cari kelurahan" @update:model-value="onFilter" /></th>
+            <th class="pb-2 pr-4">
+              <FilterSelect
+                v-model="status"
+                label="Filter status"
+                all-label="Semua status"
+                :options="MEMBER_STATUSES"
+                @change="onFilter"
+              />
+            </th>
+            <th class="pb-2"><FilterDateRange v-model:from="joinFrom" v-model:to="joinTo" label="Filter tanggal gabung" @change="onFilter" /></th>
           </tr>
         </thead>
         <tbody>
@@ -258,8 +239,9 @@ async function submit() {
             <td class="py-2 pr-4 text-slate-600">{{ member.district_name || '—' }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ member.village_name || '—' }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ memberStatusLabel(member.status) }}</td>
-            <td class="py-2 text-slate-600">{{ member.join_date || '—' }}</td>
+            <td class="py-2 text-slate-600">{{ member.join_date ? formatDate(member.join_date) : '—' }}</td>
           </tr>
+          <tr v-if="members.length === 0"><td colspan="7" class="py-3 text-slate-500">Belum ada data.</td></tr>
         </tbody>
       </table>
     </div>

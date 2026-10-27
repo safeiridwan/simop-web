@@ -20,6 +20,11 @@ export interface ListPeopleQuery {
   search?: string
   status?: string
   gender?: string
+  fullName?: string
+  personCode?: string
+  city?: string
+  district?: string
+  village?: string
   sort?: string | null
   direction?: string | null
 }
@@ -32,6 +37,11 @@ export const peopleApi = {
     if (query.search) params.set('search', query.search)
     if (query.status) params.set('status', query.status)
     if (query.gender) params.set('gender', query.gender)
+    if (query.fullName) params.set('full_name', query.fullName)
+    if (query.personCode) params.set('person_code', query.personCode)
+    if (query.city) params.set('city', query.city)
+    if (query.district) params.set('district', query.district)
+    if (query.village) params.set('village', query.village)
     if (query.sort) params.set('sort', query.sort)
     if (query.direction) params.set('direction', query.direction)
     return apiGetPage<Person[], PageMeta>(`/api/v1/persons?${params.toString()}`)

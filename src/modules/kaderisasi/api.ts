@@ -7,6 +7,8 @@ import type {
   Level,
   MembershipProfile,
   PageMeta,
+  SummaryPayload,
+  SummarySection,
   Taklimat,
 } from './types'
 
@@ -128,6 +130,15 @@ export const kaderisasiApi = {
     for (const id of query.exclude ?? []) p.append('exclude', id)
     const qs = p.toString()
     return apiGet<CadreOption[]>(`/api/v1/kaderisasi/cadre-options${qs ? `?${qs}` : ''}`)
+  },
+
+  summary: (query: { section?: SummarySection; month?: string; page?: number; pageSize?: number } = {}) => {
+    const p = new URLSearchParams()
+    if (query.section) p.set('section', query.section)
+    if (query.month) p.set('month', query.month)
+    p.set('page', String(query.page ?? 1))
+    p.set('page_size', String(query.pageSize ?? 10))
+    return apiGet<SummaryPayload>(`/api/v1/kaderisasi/summary?${p.toString()}`)
   },
 
   importTemplate: (format: 'xlsx' | 'csv') =>

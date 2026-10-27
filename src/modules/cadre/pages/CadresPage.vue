@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
+import FilterSelect from '@/components/FilterSelect.vue'
+import FilterTextInput from '@/components/FilterTextInput.vue'
+import ImportPanel from '@/components/ImportPanel.vue'
 import Pagination from '@/components/Pagination.vue'
 import SortableTh from '@/components/SortableTh.vue'
 import PersonPicker from '@/components/PersonPicker.vue'
@@ -24,9 +27,13 @@ const showImport = ref(false)
 const importing = ref(false)
 const importError = ref<string | null>(null)
 const importResult = ref<ImportResult | null>(null)
-const importFile = ref<File | null>(null)
 
-const search = ref('')
+const fullName = ref('')
+const personCode = ref('')
+const levelFilter = ref('')
+const city = ref('')
+const district = ref('')
+const village = ref('')
 const statusFilter = ref('')
 const page = ref(1)
 const pageSize = ref(10)
@@ -38,7 +45,12 @@ async function load() {
   try {
     const [list, levelList] = await Promise.all([
       cadreApi.list({
-        search: search.value,
+        fullName: fullName.value,
+        personCode: personCode.value,
+        levelId: levelFilter.value,
+        city: city.value,
+        district: district.value,
+        village: village.value,
         status: statusFilter.value,
         page: page.value,
         pageSize: pageSize.value,
@@ -81,35 +93,17 @@ function onPageSizeChange(size: number) {
   void load()
 }
 
-function onImportFile(event: Event) {
-  const input = event.target as HTMLInputElement
-  importFile.value = input.files?.[0] ?? null
-}
-
-async function onImport() {
-  if (!importFile.value) {
-    importError.value = 'Pilih berkas terlebih dahulu.'
-    return
-  }
+async function onImport(file: File) {
   importing.value = true
   importError.value = null
   importResult.value = null
   try {
-    importResult.value = await cadreApi.import(importFile.value)
-    importFile.value = null
+    importResult.value = await cadreApi.import(file)
     await load()
   } catch (err) {
     importError.value = err instanceof Error ? err.message : 'Gagal mengimpor'
   } finally {
     importing.value = false
-  }
-}
-
-async function downloadImportTemplate(format: 'csv' | 'xlsx') {
-  try {
-    await cadreApi.importTemplate(format)
-  } catch (err) {
-    importError.value = err instanceof Error ? err.message : 'Gagal mengunduh template'
   }
 }
 
@@ -154,7 +148,7 @@ async function submit() {
           class="rounded border border-slate-300 px-3 py-2 text-sm"
           @click="showImport = !showImport"
         >
-          {{ showImport ? 'Batal' : 'Impor' }}
+          {{ showImport ? 'Tutup Impor' : 'Impor' }}
         </button>
         <button
           type="button"
@@ -166,33 +160,15 @@ async function submit() {
       </div>
     </header>
 
-    <div v-if="showImport" class="mb-6 space-y-3 rounded-lg border border-slate-200 bg-white p-4">
-      <p class="text-sm text-slate-600">
-        Unggah berkas CSV atau XLSX. Orang dicocokkan lewat NIK atau nomor HP (dibuat otomatis bila belum ada) dan jenjang memakai kode
-        (mis. MULA, MUDA, MADYA, DEWASA, AHLI). Baris gagal atau duplikat dilewati dan dilaporkan.
-      </p>
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="text-sm text-slate-500">Template:</span>
-        <button type="button" class="text-sm text-brand-600 hover:underline" @click="downloadImportTemplate('csv')">CSV</button>
-        <button type="button" class="text-sm text-brand-600 hover:underline" @click="downloadImportTemplate('xlsx')">XLSX</button>
-      </div>
-      <input type="file" accept=".csv,.xlsx" class="w-full text-sm" @change="onImportFile" />
-      <p v-if="importError" class="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{{ importError }}</p>
-      <button
-        type="button"
-        :disabled="importing"
-        class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
-        @click="onImport"
-      >
-        {{ importing ? 'Mengimpor...' : 'Impor Sekarang' }}
-      </button>
-      <div v-if="importResult" class="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
-        <p class="text-slate-700">Selesai: {{ importResult.created }} dibuat, {{ importResult.skipped }} dilewati.</p>
-        <ul v-if="importResult.errors.length" class="mt-2 space-y-1 text-xs text-red-600">
-          <li v-for="e in importResult.errors" :key="e.row">Baris {{ e.row }}: {{ e.message }}</li>
-        </ul>
-      </div>
-    </div>
+    <ImportPanel
+      v-if="showImport"
+      template-path="/api/v1/cadres/import/template"
+      template-filename="template-kader"
+      :busy="importing"
+      :result="importResult"
+      :error="importError"
+      @import="onImport"
+    />
 
     <div v-if="showForm" class="mb-6 grid gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-2">
       <div class="sm:col-span-2">
@@ -217,22 +193,11 @@ async function submit() {
       </div>
     </div>
 
-    <div class="mb-4 flex flex-wrap gap-2">
-      <input v-model="search" placeholder="Cari nama atau kode" class="w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-64" @keyup.enter="onFilter" />
-      <select v-model="statusFilter" class="rounded border border-slate-300 px-3 py-2 text-sm" @change="onFilter">
-        <option value="">Semua status</option>
-        <option v-for="s in CADRE_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
-      </select>
-      <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="onFilter">Cari</button>
-    </div>
-
     <p v-if="loading" class="text-sm text-slate-500">Memuat...</p>
     <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
-    <p v-else-if="cadres.length === 0" class="text-sm text-slate-500">Belum ada kader.</p>
-
     <div v-else class="overflow-x-auto">
       <table class="w-full min-w-[56rem] border-collapse text-sm">
-        <thead>
+        <thead class="sticky top-0 z-10 bg-white">
           <tr class="border-b border-slate-200 text-left text-slate-500">
             <SortableTh field="full_name" label="Nama" :active="sort" :direction="direction" @sort="onSort" />
             <SortableTh field="person_code" label="Kode" :active="sort" :direction="direction" @sort="onSort" />
@@ -241,6 +206,31 @@ async function submit() {
             <SortableTh field="district_name" label="Kecamatan" :active="sort" :direction="direction" @sort="onSort" />
             <SortableTh field="village_name" label="Kelurahan" :active="sort" :direction="direction" @sort="onSort" />
             <SortableTh field="status" label="Status" :active="sort" :direction="direction" @sort="onSort" />
+          </tr>
+          <tr class="border-b border-slate-200">
+            <th class="pb-2 pr-4"><FilterTextInput v-model="fullName" label="Filter nama" placeholder="Cari nama" @update:model-value="onFilter" /></th>
+            <th class="pb-2 pr-4"><FilterTextInput v-model="personCode" label="Filter kode" placeholder="Cari kode" @update:model-value="onFilter" /></th>
+            <th class="pb-2 pr-4">
+              <FilterSelect
+                v-model="levelFilter"
+                label="Filter jenjang"
+                all-label="Semua jenjang"
+                :options="levels.map((l) => ({ value: l.id, label: l.name }))"
+                @change="onFilter"
+              />
+            </th>
+            <th class="pb-2 pr-4"><FilterTextInput v-model="city" label="Filter kabupaten/kota" placeholder="Cari kab/kota" @update:model-value="onFilter" /></th>
+            <th class="pb-2 pr-4"><FilterTextInput v-model="district" label="Filter kecamatan" placeholder="Cari kecamatan" @update:model-value="onFilter" /></th>
+            <th class="pb-2 pr-4"><FilterTextInput v-model="village" label="Filter kelurahan" placeholder="Cari kelurahan" @update:model-value="onFilter" /></th>
+            <th class="pb-2">
+              <FilterSelect
+                v-model="statusFilter"
+                label="Filter status"
+                all-label="Semua status"
+                :options="CADRE_STATUSES"
+                @change="onFilter"
+              />
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -255,6 +245,7 @@ async function submit() {
             <td class="py-2 pr-4 text-slate-600">{{ c.village_name || '—' }}</td>
             <td class="py-2 text-slate-600">{{ c.status }}</td>
           </tr>
+          <tr v-if="cadres.length === 0"><td colspan="7" class="py-3 text-slate-500">Belum ada data.</td></tr>
         </tbody>
       </table>
     </div>

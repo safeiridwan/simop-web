@@ -2,6 +2,7 @@
 import { onMounted, ref, watch } from 'vue'
 
 import FilterDateRange from '@/components/FilterDateRange.vue'
+import FilterSelect from '@/components/FilterSelect.vue'
 import FilterTextInput from '@/components/FilterTextInput.vue'
 import ImportPanel from '@/components/ImportPanel.vue'
 import Pagination from '@/components/Pagination.vue'
@@ -155,10 +156,13 @@ async function onImport(file: File) {
           <tr class="border-b border-slate-200">
             <th class="pb-2 pr-4"><FilterTextInput v-model="nameFilter" label="Filter nama" placeholder="Cari nama" /></th>
             <th class="pb-2 pr-4">
-              <select v-model="levelFilter" class="w-full rounded border border-slate-300 px-2 py-1 text-xs font-normal" aria-label="Filter jenjang" @change="onFilterChange">
-                <option value="">Semua jenjang</option>
-                <option v-for="l in levels" :key="l.id" :value="l.id">{{ l.name }}</option>
-              </select>
+              <FilterSelect
+                v-model="levelFilter"
+                label="Filter jenjang"
+                all-label="Semua jenjang"
+                :options="levels.map((l) => ({ value: l.id, label: l.name }))"
+                @change="onFilterChange"
+              />
             </th>
             <th class="pb-2 pr-4">
               <FilterDateRange v-model:from="formedFrom" v-model:to="formedTo" label="Filter tanggal terbentuk" @change="onFilterChange" />
@@ -166,10 +170,13 @@ async function onImport(file: File) {
             <th class="pb-2 pr-4"></th>
             <th class="pb-2 pr-4"><FilterTextInput v-model="murabbiFilter" label="Filter murabbi" placeholder="Cari murabbi" /></th>
             <th class="pb-2">
-              <select v-model="statusFilter" class="w-full rounded border border-slate-300 px-2 py-1 text-xs font-normal" aria-label="Filter status" @change="onFilterChange">
-                <option value="">Semua status</option>
-                <option v-for="s in GROUP_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
-              </select>
+              <FilterSelect
+                v-model="statusFilter"
+                label="Filter status"
+                all-label="Semua status"
+                :options="GROUP_STATUSES"
+                @change="onFilterChange"
+              />
             </th>
           </tr>
         </thead>
