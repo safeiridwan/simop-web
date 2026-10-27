@@ -13,7 +13,6 @@ vi.mock('../api', () => ({
           person_code: 'PSN-1',
           full_name: 'Budi',
           affiliation_type: 'VOLUNTEER',
-          start_date: '2026-01-05',
           end_date: null,
           status: 'ACTIVE',
           source: null,
@@ -31,28 +30,36 @@ vi.mock('../api', () => ({
 }))
 
 async function mountPage() {
-  const wrapper = mount(NonPartyPage, { global: { stubs: { PersonPicker: true } } })
+  const wrapper = mount(NonPartyPage, { global: { stubs: { PersonPicker: true, RouterLink: true } } })
   await flushPromises()
   return wrapper
 }
 
 describe('NonPartyPage header filters', () => {
-  it('uses the shared import panel and formats the start date', async () => {
+  it('uses the shared import panel and no longer shows Mulai', async () => {
     const wrapper = await mountPage()
     expect(wrapper.find('input[placeholder="Cari nama atau kode"]').exists()).toBe(false)
-    expect(wrapper.text()).toContain('05-01-2026')
+    expect(wrapper.text()).not.toContain('Mulai')
+    expect(wrapper.text()).not.toContain('05-01-2026')
 
     const importButton = wrapper.findAll('button').find((b) => b.text() === 'Impor')
     await importButton!.trigger('click')
     expect(wrapper.text()).toContain('Unduh template:')
   })
 
-  it('replaces the checkbox bar with header filters', async () => {
+  it('renders the columns in the required order', async () => {
+    const wrapper = await mountPage()
+    const headers = wrapper.findAll('thead tr')[0].findAll('th').map((th) => th.text())
+    expect(headers).toEqual(['Kode', 'Nama', 'Jenis', 'Kabupaten/Kota', 'Kecamatan', 'Kelurahan', 'Status'])
+  })
+
+  it('replaces the checkbox bar with header filters and drops the date filter', async () => {
     const wrapper = await mountPage()
     expect(wrapper.findAll('input[type="checkbox"]').length).toBe(0)
     expect(wrapper.find('select[aria-label="Filter jenis"]').exists()).toBe(true)
     expect(wrapper.find('select[aria-label="Filter status"]').exists()).toBe(true)
-    expect(wrapper.find('input[aria-label="Filter tanggal mulai dari"]').exists()).toBe(true)
+    expect(wrapper.find('select[aria-label="Filter kabupaten/kota"]').exists()).toBe(true)
+    expect(wrapper.find('input[aria-label="Filter tanggal mulai dari"]').exists()).toBe(false)
     expect(wrapper.find('input[aria-label="Filter nama"]').exists()).toBe(true)
   })
 })

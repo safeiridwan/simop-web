@@ -24,10 +24,22 @@ export interface LevelCount {
   count: number
 }
 
+export interface FinanceTotals {
+  total_debit: number
+  total_credit: number
+}
+
 export interface DashboardSummary {
   counts: DashboardCounts
   membership_by_status: StatusCount[]
   cadre_by_level: LevelCount[]
   programs_by_status: StatusCount[]
-  finance_totals: { total_debit: number; total_credit: number }
+  finance_totals: FinanceTotals
 }
+
+export type DashboardSection =
+  | 'counts'
+  | 'membership_by_status'
+  | 'cadre_by_level'
+  | 'programs_by_status'
+  | 'finance_totals'

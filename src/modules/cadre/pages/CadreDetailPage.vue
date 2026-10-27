@@ -1,11 +1,25 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 
+import AppBreadcrumb from '@/components/AppBreadcrumb.vue'
+import AppModal from '@/components/AppModal.vue'
+import PersonIdentitySection from '@/components/PersonIdentitySection.vue'
+import { useAuthStore } from '@/app/stores/auth'
+import {
+  emptyIdentityForm,
+  formFromPerson,
+  toPersonPayload,
+  usePersonIdentity,
+  type PersonIdentityForm,
+} from '@/composables/usePersonIdentity'
+import { peopleApi } from '@/modules/people/api'
 import { cadreApi } from '../api'
 import { CADRE_STATUSES, type CadreHistoryEntry, type CadreLevel, type CadreProfile } from '../types'
 
 const route = useRoute()
+const router = useRouter()
+const auth = useAuthStore()
 const id = route.params.id as string
 
 const profile = ref<CadreProfile | null>(null)
@@ -15,6 +29,18 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const saving = ref(false)
 
+const identity = usePersonIdentity(() => profile.value?.person_id ?? '')
+
+const editing = ref(false)
+const form = reactive<PersonIdentityForm>(emptyIdentityForm())
+let baseline = ''
+const discardOpen = ref(false)
+let pendingNavigation: string | null = null
+const modalMessage = ref('')
+const modalTitle = ref('Pemberitahuan')
+const confirmMessage = ref('')
+let confirmAction: (() => Promise<void>) | null = null
+
 const promoteForm = reactive({ to_level_id: '', effective_date: '', notes: '' })
 const statusForm = reactive({ status: '', notes: '' })
 
@@ -22,8 +48,26 @@ const editingHistoryId = ref<string | null>(null)
 const historyForm = reactive({ from_level_id: '', to_level_id: '', effective_date: '', notes: '' })
 
 const levelName = (levelId: string | null) => levels.value.find((l) => l.id === levelId)?.name ?? '—'
-
 const promotableLevels = computed(() => levels.value.filter((l) => l.id !== profile.value?.current_level_id))
+const canUpdate = computed(() => auth.can('cadre:update'))
+const dirty = computed(() => editing.value && JSON.stringify(form) !== baseline)
+
+function notify(message: string, title = 'Pemberitahuan') {
+  modalMessage.value = message
+  modalTitle.value = title
+}
+
+function askConfirm(message: string, action: () => Promise<void>) {
+  confirmMessage.value = message
+  confirmAction = action
+}
+
+async function runConfirm() {
+  const action = confirmAction
+  confirmMessage.value = ''
+  confirmAction = null
+  if (action) await action()
+}
 
 async function refresh() {
   loading.value = true
@@ -34,6 +78,8 @@ async function refresh() {
     levels.value = levelList
     history.value = h
     statusForm.status = p.status
+    await identity.load()
+    Object.assign(form, formFromPerson(identity.person.value, identity.address.value))
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Gagal memuat kader'
   } finally {
@@ -42,6 +88,47 @@ async function refresh() {
 }
 
 onMounted(refresh)
+
+function startEdit() {
+  Object.assign(form, formFromPerson(identity.person.value, identity.address.value))
+  baseline = JSON.stringify(form)
+  editing.value = true
+}
+
+function cancelEdit() {
+  Object.assign(form, formFromPerson(identity.person.value, identity.address.value))
+  editing.value = false
+}
+
+async function saveIdentity() {
+  if (!form.full_name.trim()) {
+    notify('Nama Lengkap wajib diisi.', 'Data Belum Lengkap')
+    return
+  }
+  saving.value = true
+  error.value = null
+  try {
+    await peopleApi.update(profile.value!.person_id, toPersonPayload(form))
+    editing.value = false
+    await refresh()
+  } catch (err) {
+    notify(err instanceof Error ? err.message : 'Gagal menyimpan identitas', 'Gagal Menyimpan')
+  } finally {
+    saving.value = false
+  }
+}
+
+function removeCadre() {
+  askConfirm('Hapus kader ini? Data dapat dipulihkan oleh administrator.', async () => {
+    try {
+      await cadreApi.remove(id)
+      editing.value = false
+      await router.push('/cadres')
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Gagal menghapus kader', 'Gagal Menghapus')
+    }
+  })
+}
 
 async function promote() {
   saving.value = true
@@ -121,6 +208,56 @@ async function removeHistory(h: CadreHistoryEntry) {
     saving.value = false
   }
 }
+
+async function addDocument(file: File, documentType: string, documentNumber: string) {
+  try {
+    await identity.addDocument(file, documentType, documentNumber)
+    notify('Dokumen berhasil ditambahkan.')
+  } catch (err) {
+    notify(err instanceof Error ? err.message : 'Gagal menambah dokumen', 'Gagal Menyimpan')
+  }
+}
+
+async function removeDocument(documentId: string) {
+  try {
+    await identity.removeDocument(documentId)
+  } catch (err) {
+    notify(err instanceof Error ? err.message : 'Gagal menghapus dokumen', 'Gagal Menghapus')
+  }
+}
+
+function beforeUnload(event: BeforeUnloadEvent) {
+  if (!dirty.value) return
+  event.preventDefault()
+  event.returnValue = ''
+}
+
+watch(dirty, (value) => {
+  if (value) window.addEventListener('beforeunload', beforeUnload)
+  else window.removeEventListener('beforeunload', beforeUnload)
+})
+
+onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
+
+onBeforeRouteLeave((to) => {
+  if (!dirty.value) return true
+  discardOpen.value = true
+  pendingNavigation = to.fullPath
+  return false
+})
+
+function keepEditing() {
+  discardOpen.value = false
+  pendingNavigation = null
+}
+
+function discardChanges() {
+  discardOpen.value = false
+  editing.value = false
+  const target = pendingNavigation
+  pendingNavigation = null
+  if (target) void router.push(target)
+}
 </script>
 
 <template>
@@ -129,12 +266,40 @@ async function removeHistory(h: CadreHistoryEntry) {
     <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
 
     <template v-else-if="profile">
-      <header class="mb-6">
-        <router-link to="/cadres" class="text-sm text-brand-600 hover:underline">← Kader</router-link>
-        <h1 class="text-xl font-semibold text-slate-900">{{ profile.full_name }}</h1>
-        <p class="font-mono text-xs text-slate-500">{{ profile.person_code }}</p>
-        <p class="mt-1 text-sm text-slate-600">Jenjang saat ini: <strong>{{ profile.level_name }}</strong> · {{ profile.status }}</p>
+      <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <AppBreadcrumb :items="[{ label: 'Kader', to: '/cadres' }, { label: 'Detail Kader' }]" />
+          <h1 class="text-xl font-semibold text-slate-900">{{ profile.full_name }}</h1>
+          <p class="font-mono text-xs text-slate-500">{{ profile.person_code }}</p>
+          <p class="mt-1 text-sm text-slate-600">
+            Jenjang saat ini: <strong>{{ profile.level_name }}</strong> · {{ profile.status }}
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <template v-if="canUpdate && !editing">
+            <button type="button" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="startEdit">Edit</button>
+            <button type="button" class="rounded border border-red-300 px-3 py-2 text-sm text-red-600" @click="removeCadre">Hapus</button>
+          </template>
+          <template v-if="editing">
+            <button type="button" :disabled="saving" class="rounded bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50" @click="saveIdentity">
+              {{ saving ? 'Menyimpan...' : 'Simpan' }}
+            </button>
+            <button type="button" :disabled="saving" class="rounded border border-slate-300 px-3 py-2 text-sm" @click="cancelEdit">Batal</button>
+          </template>
+        </div>
       </header>
+
+      <PersonIdentitySection
+        :form="form"
+        :person="identity.person.value"
+        :address="identity.address.value"
+        :documents="identity.documents.value"
+        :editing="editing"
+        :disabled="saving"
+        class="mb-6"
+        @add-document="addDocument"
+        @remove-document="removeDocument"
+      />
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="rounded-lg border border-slate-200 bg-white p-4">
@@ -237,5 +402,24 @@ async function removeHistory(h: CadreHistoryEntry) {
         </div>
       </div>
     </template>
+
+    <AppModal :open="modalMessage !== ''" :title="modalTitle" :message="modalMessage" @close="modalMessage = ''" />
+    <AppModal
+      :open="confirmMessage !== ''"
+      variant="confirm"
+      title="Konfirmasi"
+      :message="confirmMessage"
+      @close="confirmMessage = ''"
+      @confirm="runConfirm"
+    />
+    <AppModal
+      :open="discardOpen"
+      variant="confirm"
+      title="Perubahan Belum Tersimpan"
+      message="Perubahan belum disimpan. Yakin ingin meninggalkan halaman ini?"
+      confirm-label="Ya, Tinggalkan"
+      @close="keepEditing"
+      @confirm="discardChanges"
+    />
   </section>
 </template>

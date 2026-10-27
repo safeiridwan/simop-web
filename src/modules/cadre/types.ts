@@ -42,6 +42,7 @@ export interface ImportResult {
   created: number
   skipped: number
   errors: { row: number; message: string }[]
+  notices?: string[]
 }
 
 export interface Training {

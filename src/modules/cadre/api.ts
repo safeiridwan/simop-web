@@ -46,6 +46,7 @@ export const cadreApi = {
     return apiGetPage<CadreProfile[], PageMeta>(`/api/v1/cadres?${params.toString()}`)
   },
   get: (id: string) => apiGet<CadreProfile>(`/api/v1/cadres/${id}`),
+  remove: (id: string) => apiDelete<{ status: string }>(`/api/v1/cadres/${id}`),
   create: (input: { person_id: string; level_id: string; started_at?: string; notes?: string }) =>
     apiPost<CadreProfile>('/api/v1/cadres', input),
   importTemplate: (format: 'csv' | 'xlsx') =>

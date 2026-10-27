@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
+import AppBreadcrumb from '@/components/AppBreadcrumb.vue'
 import SearchSelect from '@/components/SearchSelect.vue'
 import { useAuthStore } from '@/app/stores/auth'
 import { documentsApi } from '@/modules/documents/api'
@@ -279,6 +280,7 @@ async function downloadDocument(doc: PersonDocument) {
     <template v-else-if="person">
       <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
+          <AppBreadcrumb :items="[{ label: 'Semua Orang', to: '/people' }, { label: 'Detail Orang' }]" />
           <h1 class="text-xl font-semibold text-slate-900">{{ person.full_name }}</h1>
           <p class="font-mono text-xs text-slate-500">{{ person.person_code }}</p>
         </div>

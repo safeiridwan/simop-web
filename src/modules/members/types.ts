@@ -41,6 +41,7 @@ export interface ImportResult {
   created: number
   skipped: number
   errors: { row: number; message: string }[]
+  notices?: string[]
 }
 
 export const MEMBER_STATUSES: { value: string; label: string }[] = [

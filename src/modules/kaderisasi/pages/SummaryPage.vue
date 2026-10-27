@@ -226,7 +226,8 @@ const memberValues = computed(() => members.value.map((row) => row.count))
       </div>
 
       <div class="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 class="mb-3 font-semibold text-slate-900">Jumlah Anggota per Jenjang</h2>
+        <h2 class="mb-1 font-semibold text-slate-900">Jumlah Anggota per Jenjang</h2>
+        <p class="mb-3 text-xs text-slate-500">Seluruh kader aktif per jenjang, termasuk yang belum tergabung di grup pembinaan.</p>
         <SkeletonBlock v-if="membersLoading" kind="chart" />
         <div v-else-if="membersError">
           <PieChart :labels="[]" :values="[]" disabled empty-label="Data gagal dimuat" aria-label="Anggota per jenjang" />

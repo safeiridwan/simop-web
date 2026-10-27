@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import AppBreadcrumb from '@/components/AppBreadcrumb.vue'
 import AppModal from '@/components/AppModal.vue'
 import { useAuthStore } from '@/app/stores/auth'
 import { formatDate } from '@/utils/date'
@@ -131,7 +132,7 @@ function remove() {
 
     <template v-else-if="item">
       <header class="mb-6">
-        <router-link to="/kaderisasi/taklimat" class="text-sm text-brand-600 hover:underline">← Taklimat</router-link>
+        <AppBreadcrumb :items="[{ label: 'Taklimat', to: '/kaderisasi/taklimat' }, { label: 'Detail Taklimat' }]" />
         <h1 class="text-xl font-semibold text-slate-900">{{ item.title }}</h1>
         <p class="text-sm text-slate-500">{{ formatDate(item.publish_date) }} · {{ taklimatStatusLabel(item.status) }}</p>
       </header>

@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
+import AppBreadcrumb from '@/components/AppBreadcrumb.vue'
 import { membersApi } from '../api'
 import { MEMBER_STATUSES, memberStatusLabel, type Member, type MemberHistory } from '../types'
 
@@ -85,7 +86,7 @@ async function verify() {
     <template v-else-if="member">
       <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <router-link to="/members" class="text-sm text-brand-600 hover:underline">← Anggota</router-link>
+          <AppBreadcrumb :items="[{ label: 'Anggota Partai', to: '/members' }, { label: 'Detail Anggota' }]" />
           <h1 class="text-xl font-semibold text-slate-900">{{ member.full_name }}</h1>
           <p class="font-mono text-xs text-slate-500">{{ member.member_number }} · {{ member.person_code }}</p>
         </div>

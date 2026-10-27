@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
+import AppBreadcrumb from '@/components/AppBreadcrumb.vue'
 import Pagination from '@/components/Pagination.vue'
 import { formatDate } from '@/utils/date'
 import { kaderisasiApi } from '../api'
@@ -65,19 +66,14 @@ function toggleAttendees(sessionId: string) {
 <template>
   <section>
     <header class="mb-6">
-      <nav class="mb-1 text-xs text-slate-500" aria-label="Breadcrumb">
-        <router-link to="/kaderisasi/grup-pembinaan" class="hover:underline">Grup Pembinaan</router-link>
-        <span class="px-1">/</span>
-        <router-link :to="`/kaderisasi/grup-pembinaan/${id}`" class="hover:underline">Detail Grup</router-link>
-        <span class="px-1">/</span>
-        <span>Riwayat Pelaksanaan Pembinaan</span>
-      </nav>
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 class="text-xl font-semibold text-slate-900">Riwayat Pelaksanaan Pembinaan</h1>
-        <router-link :to="`/kaderisasi/grup-pembinaan/${id}`" class="text-sm text-brand-600 hover:underline">
-          ← Kembali ke detail grup
-        </router-link>
-      </div>
+      <AppBreadcrumb
+        :items="[
+          { label: 'Grup Pembinaan', to: '/kaderisasi/grup-pembinaan' },
+          { label: 'Detail Grup Pembinaan', to: `/kaderisasi/grup-pembinaan/${id}` },
+          { label: 'Riwayat Pembinaan' },
+        ]"
+      />
+      <h1 class="text-xl font-semibold text-slate-900">Riwayat Pelaksanaan Pembinaan</h1>
     </header>
 
     <p v-if="loading" class="text-sm text-slate-500">Memuat...</p>
@@ -124,7 +120,7 @@ function toggleAttendees(sessionId: string) {
                   {{ s.attendees.length }} orang
                 </button>
                 <ul v-if="expandedAttendees.has(s.id)" class="mt-1 space-y-0.5 text-xs text-slate-600">
-                  <li v-for="a in s.attendees" :key="a.cadre_profile_id">{{ a.person_code }} - {{ a.full_name }}</li>
+                  <li v-for="a in s.attendees" :key="a.id">{{ a.person_code ? `${a.person_code} - ` : '' }}{{ a.full_name }}</li>
                 </ul>
               </td>
               <td class="py-2 text-slate-600">

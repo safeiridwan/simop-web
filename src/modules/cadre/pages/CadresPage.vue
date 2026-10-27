@@ -7,6 +7,7 @@ import ImportPanel from '@/components/ImportPanel.vue'
 import Pagination from '@/components/Pagination.vue'
 import SortableTh from '@/components/SortableTh.vue'
 import PersonPicker from '@/components/PersonPicker.vue'
+import { regionsApi } from '@/modules/people/api'
 import type { Person } from '@/modules/people/types'
 import { cadreApi } from '../api'
 import { useSort } from '@/composables/useSort'
@@ -38,6 +39,16 @@ const statusFilter = ref('')
 const page = ref(1)
 const pageSize = ref(10)
 const { sort, direction, toggle } = useSort()
+const cityOptions = ref<{ value: string; label: string }[]>([])
+
+async function loadCityOptions() {
+  try {
+    const cities = await regionsApi.cities('')
+    cityOptions.value = cities.map((c) => ({ value: c.name, label: c.name }))
+  } catch {
+    cityOptions.value = []
+  }
+}
 
 async function load() {
   loading.value = true
@@ -69,7 +80,10 @@ async function load() {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  void load()
+  void loadCityOptions()
+})
 
 function onSort(field: string) {
   toggle(field)
@@ -199,8 +213,8 @@ async function submit() {
       <table class="w-full min-w-[56rem] border-collapse text-sm">
         <thead class="sticky top-0 z-10 bg-white">
           <tr class="border-b border-slate-200 text-left text-slate-500">
-            <SortableTh field="full_name" label="Nama" :active="sort" :direction="direction" @sort="onSort" />
             <SortableTh field="person_code" label="Kode" :active="sort" :direction="direction" @sort="onSort" />
+            <SortableTh field="full_name" label="Nama" :active="sort" :direction="direction" @sort="onSort" />
             <SortableTh field="level_name" label="Jenjang" :active="sort" :direction="direction" @sort="onSort" />
             <SortableTh field="city_name" label="Kabupaten/Kota" :active="sort" :direction="direction" @sort="onSort" />
             <SortableTh field="district_name" label="Kecamatan" :active="sort" :direction="direction" @sort="onSort" />
@@ -208,8 +222,8 @@ async function submit() {
             <SortableTh field="status" label="Status" :active="sort" :direction="direction" @sort="onSort" />
           </tr>
           <tr class="border-b border-slate-200">
-            <th class="pb-2 pr-4"><FilterTextInput v-model="fullName" label="Filter nama" placeholder="Cari nama" @update:model-value="onFilter" /></th>
             <th class="pb-2 pr-4"><FilterTextInput v-model="personCode" label="Filter kode" placeholder="Cari kode" @update:model-value="onFilter" /></th>
+            <th class="pb-2 pr-4"><FilterTextInput v-model="fullName" label="Filter nama" placeholder="Cari nama" @update:model-value="onFilter" /></th>
             <th class="pb-2 pr-4">
               <FilterSelect
                 v-model="levelFilter"
@@ -219,7 +233,15 @@ async function submit() {
                 @change="onFilter"
               />
             </th>
-            <th class="pb-2 pr-4"><FilterTextInput v-model="city" label="Filter kabupaten/kota" placeholder="Cari kab/kota" @update:model-value="onFilter" /></th>
+            <th class="pb-2 pr-4">
+              <FilterSelect
+                v-model="city"
+                label="Filter kabupaten/kota"
+                all-label="Semua kab/kota"
+                :options="cityOptions"
+                @change="onFilter"
+              />
+            </th>
             <th class="pb-2 pr-4"><FilterTextInput v-model="district" label="Filter kecamatan" placeholder="Cari kecamatan" @update:model-value="onFilter" /></th>
             <th class="pb-2 pr-4"><FilterTextInput v-model="village" label="Filter kelurahan" placeholder="Cari kelurahan" @update:model-value="onFilter" /></th>
             <th class="pb-2">
@@ -235,10 +257,10 @@ async function submit() {
         </thead>
         <tbody>
           <tr v-for="c in cadres" :key="c.id" class="border-b border-slate-100 hover:bg-slate-50">
+            <td class="py-2 pr-4 font-mono text-xs text-slate-500">{{ c.person_code }}</td>
             <td class="py-2 pr-4">
               <router-link :to="`/cadres/${c.id}`" class="text-brand-600 hover:underline">{{ c.full_name }}</router-link>
             </td>
-            <td class="py-2 pr-4 font-mono text-xs text-slate-500">{{ c.person_code }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ c.level_name }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ c.city_name || '—' }}</td>
             <td class="py-2 pr-4 text-slate-600">{{ c.district_name || '—' }}</td>

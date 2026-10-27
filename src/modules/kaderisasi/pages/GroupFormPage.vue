@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import AppBreadcrumb from '@/components/AppBreadcrumb.vue'
 import AppModal from '@/components/AppModal.vue'
 import { kaderisasiApi, type CadreOption } from '../api'
 import { GROUP_STATUSES, type GroupMemberRow, type Level } from '../types'
@@ -80,7 +81,7 @@ async function submit() {
 <template>
   <section>
     <header class="mb-6">
-      <router-link to="/kaderisasi/grup-pembinaan" class="text-sm text-brand-600 hover:underline">← Grup Pembinaan</router-link>
+      <AppBreadcrumb :items="[{ label: 'Grup Pembinaan', to: '/kaderisasi/grup-pembinaan' }, { label: 'Tambah Grup Pembinaan' }]" />
       <h1 class="text-xl font-semibold text-slate-900">Tambah Grup Pembinaan</h1>
     </header>
 

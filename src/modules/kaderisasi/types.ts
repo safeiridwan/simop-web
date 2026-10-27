@@ -85,11 +85,13 @@ export function truncateFilename(name: string | null, max = 50): string {
 }
 
 export interface SessionAttendee {
-  cadre_profile_id: string
+  /** Attendance row id (stable key; a TARBS user may have no cadre profile). */
+  id: string
+  cadre_profile_id: string | null
   person_code: string
   full_name: string
-  level_code: string
-  level_name: string
+  level_code: string | null
+  level_name: string | null
 }
 
 export interface GroupSession {

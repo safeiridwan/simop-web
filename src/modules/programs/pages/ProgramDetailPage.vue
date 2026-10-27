@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
+import AppBreadcrumb from '@/components/AppBreadcrumb.vue'
 import AppModal from '@/components/AppModal.vue'
 import CurrencyInput from '@/components/CurrencyInput.vue'
 import FileDropzone from '@/components/FileDropzone.vue'
@@ -273,7 +274,7 @@ async function download(fileId: string, filename: string) {
     <template v-else-if="detail">
       <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <router-link to="/programs" class="text-sm text-brand-600 hover:underline">← Semua Program</router-link>
+          <AppBreadcrumb :items="[{ label: 'Semua Program', to: '/programs' }, { label: 'Detail Program' }]" />
           <p class="mt-1 text-sm text-slate-600">Status: <strong>{{ programStatusLabel(detail.program.status) }}</strong></p>
         </div>
         <div class="flex flex-wrap gap-2">

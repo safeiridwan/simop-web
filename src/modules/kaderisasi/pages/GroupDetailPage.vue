@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import AppBreadcrumb from '@/components/AppBreadcrumb.vue'
 import AppModal from '@/components/AppModal.vue'
 import { useAuthStore } from '@/app/stores/auth'
 import { CADRE_STATUSES } from '@/modules/cadre/types'
@@ -178,7 +179,7 @@ function openMember(member: { id: string; full_name: string; person_code: string
     <template v-else-if="detail && group">
       <header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <router-link to="/kaderisasi/grup-pembinaan" class="text-sm text-brand-600 hover:underline">← Grup Pembinaan</router-link>
+          <AppBreadcrumb :items="[{ label: 'Grup Pembinaan', to: '/kaderisasi/grup-pembinaan' }, { label: 'Detail Grup Pembinaan' }]" />
           <h1 class="text-xl font-semibold text-slate-900">{{ group.name }}</h1>
         </div>
         <div class="flex flex-wrap gap-2">

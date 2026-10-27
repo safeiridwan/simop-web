@@ -69,6 +69,16 @@ export interface AddressInput {
   is_primary: boolean
 }
 
+/** Partial primary-address edit sent with an identity update. */
+export interface PersonAddressPatch {
+  address_line?: string | null
+  province_id?: string | null
+  city_id?: string | null
+  district_id?: string | null
+  village_id?: string | null
+  postal_code?: string | null
+}
+
 export interface PersonDocument {
   id: string
   person_id: string
@@ -88,4 +98,5 @@ export interface ImportResult {
   created: number
   skipped: number
   errors: { row: number; message: string }[]
+  notices?: string[]
 }

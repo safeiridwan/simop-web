@@ -13,6 +13,7 @@ export interface ImportSummary {
   created: number
   skipped: number
   errors: ImportRowError[]
+  notices?: string[]
 }
 
 const props = withDefaults(
@@ -74,6 +75,9 @@ function submit() {
       <p class="text-slate-700">
         Berhasil: {{ result.created }} baris tersimpan, {{ result.skipped }} baris gagal.
       </p>
+      <ul v-if="result.notices?.length" class="mt-2 space-y-1 text-xs text-amber-700">
+        <li v-for="(notice, index) in result.notices" :key="index">{{ notice }}</li>
+      </ul>
       <ul v-if="result.errors.length" class="mt-2 space-y-1 text-xs text-red-600">
         <li v-for="e in result.errors" :key="e.row">Baris {{ e.row }}: {{ e.message }}</li>
       </ul>

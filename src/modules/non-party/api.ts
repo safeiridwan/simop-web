@@ -1,4 +1,4 @@
-import { apiGetPage, apiPost, apiUpload, downloadFile } from '@/services/http'
+import { apiDelete, apiGet, apiGetPage, apiPatch, apiPost, apiUpload, downloadFile } from '@/services/http'
 import type { Affiliation, AffiliationInput, ImportResult, PageMeta } from './types'
 
 export interface ListAffiliationsQuery {
@@ -11,8 +11,6 @@ export interface ListAffiliationsQuery {
   city?: string
   district?: string
   village?: string
-  startFrom?: string
-  startTo?: string
   sort?: string | null
   direction?: string | null
 }
@@ -29,13 +27,14 @@ export const affiliationsApi = {
     if (query.city) params.set('city', query.city)
     if (query.district) params.set('district', query.district)
     if (query.village) params.set('village', query.village)
-    if (query.startFrom) params.set('start_from', query.startFrom)
-    if (query.startTo) params.set('start_to', query.startTo)
     if (query.sort) params.set('sort', query.sort)
     if (query.direction) params.set('direction', query.direction)
     return apiGetPage<Affiliation[], PageMeta>(`/api/v1/affiliations?${params.toString()}`)
   },
   create: (input: AffiliationInput) => apiPost<Affiliation>('/api/v1/affiliations', input),
+  get: (id: string) => apiGet<Affiliation>(`/api/v1/affiliations/${id}`),
+  update: (id: string, input: AffiliationInput) => apiPatch<Affiliation>(`/api/v1/affiliations/${id}`, input),
+  remove: (id: string) => apiDelete<{ status: string }>(`/api/v1/affiliations/${id}`),
   importTemplate: (format: 'csv' | 'xlsx') =>
     downloadFile(`/api/v1/affiliations/import/template?format=${format}`, `template-non-kader.${format}`),
   import: (file: File) => {

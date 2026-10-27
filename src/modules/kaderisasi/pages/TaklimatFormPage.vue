@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import AppBreadcrumb from '@/components/AppBreadcrumb.vue'
 import AppModal from '@/components/AppModal.vue'
 import { kaderisasiApi } from '../api'
 import type { Level } from '../types'
@@ -71,7 +72,7 @@ async function submit() {
 <template>
   <section>
     <header class="mb-6">
-      <router-link to="/kaderisasi/taklimat" class="text-sm text-brand-600 hover:underline">← Taklimat</router-link>
+      <AppBreadcrumb :items="[{ label: 'Taklimat', to: '/kaderisasi/taklimat' }, { label: 'Tambah Taklimat' }]" />
       <h1 class="text-xl font-semibold text-slate-900">Tambah Taklimat</h1>
     </header>
 

@@ -46,11 +46,18 @@ describe('CadresPage header filters', () => {
     expect(wrapper.text()).toContain('Unduh template:')
   })
 
-  it('renders text, level, and status header filters', async () => {
+  it('renders the columns in the required order', async () => {
+    const wrapper = await mountPage()
+    const headers = wrapper.findAll('thead tr')[0].findAll('th').map((th) => th.text())
+    expect(headers).toEqual(['Kode', 'Nama', 'Jenjang', 'Kabupaten/Kota', 'Kecamatan', 'Kelurahan', 'Status'])
+  })
+
+  it('renders text, level, city, and status header filters', async () => {
     const wrapper = await mountPage()
     expect(wrapper.find('input[aria-label="Filter nama"]').exists()).toBe(true)
     expect(wrapper.find('input[aria-label="Filter kode"]').exists()).toBe(true)
     expect(wrapper.find('select[aria-label="Filter jenjang"]').exists()).toBe(true)
+    expect(wrapper.find('select[aria-label="Filter kabupaten/kota"]').exists()).toBe(true)
     expect(wrapper.find('select[aria-label="Filter status"]').exists()).toBe(true)
   })
 })

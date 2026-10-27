@@ -7,6 +7,7 @@ import type {
   PageMeta,
   Person,
   PersonDocument,
+  PersonAddressPatch,
   PersonInput,
   PersonSecrets,
   Region,
@@ -49,7 +50,8 @@ export const peopleApi = {
   get: (id: string) => apiGet<Person>(`/api/v1/persons/${id}`),
   reveal: (id: string) => apiGet<PersonSecrets>(`/api/v1/persons/${id}/reveal`),
   create: (input: PersonInput) => apiPost<Person>('/api/v1/persons', input),
-  update: (id: string, input: Partial<PersonInput>) => apiPatch<Person>(`/api/v1/persons/${id}`, input),
+  update: (id: string, input: Partial<PersonInput> & { address?: PersonAddressPatch }) =>
+    apiPatch<Person>(`/api/v1/persons/${id}`, input),
   remove: (id: string) => apiDelete<{ status: string }>(`/api/v1/persons/${id}`),
   searchByNIK: (nik: string) =>
     apiGet<Person[]>(`/api/v1/persons/search?nik=${encodeURIComponent(nik)}`),
