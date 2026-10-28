@@ -14,7 +14,12 @@ const showForm = ref(false)
 const submitting = ref(false)
 const formError = ref<string | null>(null)
 const form = reactive<CreateUserInput>({ email: '', password: '', full_name: '', role_codes: [] })
-const rolesInput = ref('')
+// Two roles only (ADR-029); the select keeps typos out of role_codes.
+const ROLE_OPTIONS = [
+  { value: 'ADMIN', label: 'Admin (tanpa akses Sistem)' },
+  { value: 'SUPER_ADMIN', label: 'Super Admin (akses penuh)' },
+]
+const role = ref('ADMIN')
 
 onMounted(() => void load())
 
@@ -38,16 +43,13 @@ async function submit() {
   submitting.value = true
   formError.value = null
   try {
-    form.role_codes = rolesInput.value
-      .split(',')
-      .map((r) => r.trim())
-      .filter(Boolean)
+    form.role_codes = [role.value]
     await create({ ...form })
     showForm.value = false
     form.email = ''
     form.password = ''
     form.full_name = ''
-    rolesInput.value = ''
+    role.value = 'ADMIN'
   } catch (err) {
     formError.value = err instanceof Error ? err.message : 'Gagal membuat pengguna'
   } finally {
@@ -90,8 +92,12 @@ function roleLabel(user: User): string {
         <input id="u-password" v-model="form.password" type="password" required minlength="8" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
       </div>
       <div>
-        <label class="block text-sm font-medium text-slate-700" for="u-roles">Role (pisahkan dengan koma)</label>
-        <input id="u-roles" v-model="rolesInput" placeholder="SUPER_ADMIN" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm" />
+        <label class="block text-sm font-medium text-slate-700" for="u-roles">Role</label>
+        <select id="u-roles" v-model="role" class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm">
+          <option v-for="option in ROLE_OPTIONS" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
       </div>
       <p v-if="formError" class="text-sm text-red-600 sm:col-span-2">{{ formError }}</p>
       <button
