@@ -256,6 +256,116 @@ export interface GroupAttendanceSummary {
   summary: { average_percentage: number; meeting_count: number }
 }
 
+const MONTH_LABELS = [
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
+]
+
+export type AttendanceCellState = 'present' | 'absent' | 'not_applicable'
+
+export interface AttendanceMonth {
+  /** `yyyy-mm`, derived from `session_date`. */
+  key: string
+  /** Indonesian month and year, e.g. `Januari 2026`. */
+  label: string
+  sessions: AttendanceSessionRow[]
+  meeting_count: number
+  average_percentage: number
+}
+
+/**
+ * Month bucket of a `yyyy-mm-dd` session date. The string is sliced rather
+ * than parsed as a Date so the project timezone cannot shift an edge-of-month
+ * meeting into the neighbouring month.
+ */
+export function attendanceMonthKey(sessionDate: string): string | null {
+  const match = /^(\d{4})-(\d{2})/.exec(sessionDate)
+  return match ? `${match[1]}-${match[2]}` : null
+}
+
+export function attendanceMonthLabel(key: string): string {
+  const [, month] = key.split('-')
+  const label = MONTH_LABELS[Number(month) - 1]
+  return `${label ?? key} ${key.slice(0, 4)}`
+}
+
+/**
+ * Cell state for one member × session pair, matching the metric rule: a
+ * recorded attendance always counts as present, otherwise a session before
+ * the join date is not applicable rather than absent.
+ */
+export function attendanceCellState(
+  member: AttendanceMemberRow,
+  session: AttendanceSessionRow,
+): AttendanceCellState {
+  if (member.attended_session_ids.includes(session.id)) return 'present'
+  if (session.session_date < member.joined_at) return 'not_applicable'
+  return 'absent'
+}
+
+/**
+ * Group sessions into months, newest month first, dates chronologically
+ * ascending within each month. Months without sessions are not returned.
+ * Each month's average follows the existing per-member metric (only members
+ * with at least one applicable meeting contribute).
+ */
+export function groupAttendanceByMonth(
+  sessions: AttendanceSessionRow[],
+  members: AttendanceMemberRow[],
+): AttendanceMonth[] {
+  const buckets = new Map<string, AttendanceSessionRow[]>()
+  for (const session of sessions) {
+    const key = attendanceMonthKey(session.session_date)
+    if (!key) continue
+    const bucket = buckets.get(key)
+    if (bucket) bucket.push(session)
+    else buckets.set(key, [session])
+  }
+
+  return [...buckets.entries()]
+    .sort(([a], [b]) => (a < b ? 1 : a > b ? -1 : 0))
+    .map(([key, list]) => {
+      const ordered = [...list].sort((a, b) =>
+        a.session_date < b.session_date ? -1 : a.session_date > b.session_date ? 1 : a.id.localeCompare(b.id),
+      )
+      const percentages: number[] = []
+      for (const member of members) {
+        const applicable = ordered.filter(
+          (session) =>
+            member.attended_session_ids.includes(session.id) || session.session_date >= member.joined_at,
+        )
+        if (applicable.length === 0) continue
+        const attended = applicable.filter((session) =>
+          member.attended_session_ids.includes(session.id),
+        ).length
+        percentages.push(Math.round((attended / applicable.length) * 1000) / 10)
+      }
+      const average =
+        percentages.length === 0
+          ? 0
+          : Math.round(
+              (percentages.reduce((sum, value) => sum + value, 0) / percentages.length) * 10,
+            ) / 10
+      return {
+        key,
+        label: attendanceMonthLabel(key),
+        sessions: ordered,
+        meeting_count: ordered.length,
+        average_percentage: average,
+      }
+    })
+}
+
 export interface MutabaahGroupItem {
   code: string
   label: string
